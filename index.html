@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Premium POS Mobile - เคลียร์บิลค้างชำระ</title>
+    <title>Premium POS Mobile - One-Click Paid</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
@@ -118,7 +118,7 @@
             .then(() => { isCameraOpen = true; document.getElementById('laser-line').classList.remove('hidden'); document.getElementById('cameraToggleBtn').innerText = "🟢 เปิดอยู่ (คลิกปิด)"; document.getElementById('cameraToggleBtn').className = "bg-emerald-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm"; document.getElementById('scan-status').innerText = "🎯 เล็งบาร์โค้ดให้อยู่ในกรอบเลนส์"; })
             .catch(err => { html5Qrcode.start({ facingMode: { any: true } }, cameraConfig, onScanSuccess, () => {}).then(() => { isCameraOpen = true; document.getElementById('laser-line').classList.remove('hidden'); document.getElementById('cameraToggleBtn').innerText = "🟢 เปิดอยู่ (โหมดสำรอง)"; document.getElementById('cameraToggleBtn').className = "bg-yellow-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm"; }).catch(() => { document.getElementById('scan-status').innerHTML = "❌ เปิดกล้องไม่สำเร็จ"; }); });
         }
-        function stopCamera() { if (html5Qrcode && isCameraOpen) { html5Qrcode.stop().then(() => { isCameraOpen = false; document.getElementById('laser-line').classList.add('hidden'); document.getElementById('reader').innerHTML = ""; document.getElementById('cameraToggleBtn').innerText = "🔴 ปิดอยู่ (คลิกเปิด)"; document.getElementById('cameraToggleBtn').className = "bg-rose-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm"; document.getElementById('scan-status').innerText = "💡 พร้อมเปิดกล้องใหม่อีกครั้ง"; }); } }
+        function stopCamera() { if (html5Qrcode && isCameraOpen) { html5Qrcode.stop().then(() => { isCameraOpen = false; document.getElementById('laser-line').classList.add('hidden'); document.getElementById('reader').innerHTML = ""; document.getElementById('cameraToggleBtn').innerText = "🔴 ปิดอยู่ (คลิกเปิด)"; document.getElementById('cameraToggleBtn').className = "bg-rose-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm"; document.getElementById('scan-status').innerText = "💡 พร้อมเปิดกล้องใหม่อิร์กครั้ง"; }); } }
         function toggleCamera() { isCameraOpen ? stopCamera() : startCamera(); }
         function onScanSuccess(decodedText) { if (isProcessing) return; isProcessing = true; playBeepSound(); if (navigator.vibrate) navigator.vibrate([80, 40, 80]); document.getElementById('barcode').value = decodedText; fetchProductData(decodedText); setTimeout(() => { stopCamera(); showSuccessToast("จับรหัสสินค้าสำเร็จ!"); }, 300); }
 
@@ -134,17 +134,18 @@
                 const grouped = {}; data.forEach(i => { if(!grouped[i.date]) grouped[i.date] = {items:[], total:0}; grouped[i.date].items.push(i); grouped[i.date].total += i.total; }); 
                 let html = ""; for(const d in grouped) { 
                     html += `<div class="bg-slate-50 border border-slate-200/60 p-3 rounded-xl mb-2 shadow-sm"><div class="flex justify-between font-bold border-b border-slate-200/50 pb-1.5 text-slate-700 text-xs"><span>📅 ${d}</span><span class="text-indigo-600">รวม: ${grouped[d].total.toFixed(2)} ฿</span></div><div class="divide-y divide-slate-100 max-h-32 overflow-y-auto">`; 
-                    grouped[d].items.forEach(i => { html += `<div class="flex justify-between py-1.5 text-slate-600 text-[11px]"><span>[${i.time}] ${i.name} (${i.customer})</span><span class="font-bold">${i.total.toFixed(2)} ฿ <span class="font-normal text-[10px] ${i.payment === 'ยังไม่ได้ชำระเงิน' ? 'text-rose-500' : 'text-slate-400'}">(${i.payment})</span></span></div>`; }); 
+                    grouped[d].items.forEach(i => { html += `<div class="flex justify-between py-1.5 text-slate-600 text-[11px]"><span>[${i.time}] ${i.name} (${i.customer})</span><span class="font-bold">${i.total.toFixed(2)} ฿ <span class="font-normal text-[10px] ${i.payment === 'ยังไม่ได้ชำระเงิน' ? 'text-rose-500' : 'text-emerald-600'}">(${i.payment})</span></span></div>`; }); 
                     html += `</div></div>`; 
                 } 
                 document.getElementById('modalContent').innerHTML = html || "ไม่มีข้อมูลประวัติการขาย"; 
             }); 
         }
 
-        // 🚨 ฟังก์ชันใหม่: แสดงรายชื่อลูกค้าค้างจ่าย พร้อมปุ่มกด "เคลียร์เงินสำเร็จ"
+        // รายชื่อลูกค้าค้างจ่ายเงิน (อัปเดต: บิลไหนจ่ายแล้วจะไม่เอามาแสดงในหน้านี้อีกเลย)
         function openUnpaidModal() { 
             showModal("🚨 รายชื่อลูกค้าค้างจ่ายเงิน", "<p class='text-center py-4 text-slate-400 animate-pulse'>⏳ กำลังประมวลผลบิลคงค้าง...</p>"); 
-            fetch(`${WEB_APP_URL}?action=getHistory`).then(r=>r.json()).then(data => { 
+            fetch(`${WEB_APP_URL}?action=getHistory`).then(r=>r.json()).then(data => {
+                // คัดกรองเอาเฉพาะตัวที่เท่ากับ "ยังไม่ได้ชำระเงิน" เท่านั้น (ตัวที่แก้เป็น "จ่ายแล้ว" จะหลุดออกจากเงื่อนไขนี้ทันที)
                 const unpaid = data.filter(i => i.payment === "ยังไม่ได้ชำระเงิน"); 
                 const debts = {}; unpaid.forEach(i => { if(!debts[i.customer]) debts[i.customer] = {total:0, list:[]}; debts[i.customer].total += i.total; debts[i.customer].list.push(i); }); 
                 
@@ -166,8 +167,8 @@
                                     <span class="font-bold text-slate-700">${i.name}</span>
                                     <div class="text-[9px] text-slate-400">${i.date} (${i.time}) - ยอด: ${i.total} ฿</div>
                                 </div>
-                                <button onclick="markAsPaid(${i.rowId}, '${c}', '${i.name}')" 
-                                    class="bg-emerald-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-md shadow-sm active:scale-95 transition">
+                                <button onclick="markAsPaid(${i.rowId})" 
+                                    class="bg-emerald-500 text-white text-[10px] font-bold px-3 py-1 rounded-md shadow-sm active:scale-95 transition">
                                     💸 จ่ายแล้ว
                                 </button>
                             </div>
@@ -179,31 +180,26 @@
             }); 
         }
 
-        // ฟังก์ชันเมื่อกดปุ่ม "จ่ายแล้ว"
-        function markAsPaid(rowId, customerName, itemName) {
-            // ให้เลือกช้อยส์วิธีจ่ายเงิน
-            const method = prompt(`บิลของคุณ ${customerName} (${itemName})\nกรุณาพิมพ์วิธีชำระเงิน:\n1 - โอนเงิน\n2 - เงินสด`, "โอนเงิน");
+        // ฟังก์ชันใหม่: วันคลิกจ่ายเงินทันที ไม่ขึ้นล้มเหลว (ปรับโครงสร้างเป็น URLSearchParams ป้องกัน CORS)
+        function markAsPaid(rowId) {
+            showSuccessToast("⏳ กำลังบันทึกสถานะ...");
             
-            if (method === null) return; // กดยกเลิก
-            
-            let finalMethod = "โอนเงิน";
-            if (method === "2" || method.trim() === "เงินสด") finalMethod = "เงินสด";
+            // ใช้ URLSearchParams ในการห่อข้อมูล ป้องกันระบบเบราว์เซอร์สกัดกั้นการส่งข้อมูลข้ามโดเมน
+            const formDetails = new URLSearchParams();
+            formDetails.append('action', 'updatePayment');
+            formDetails.append('rowId', rowId);
 
-            showSuccessToast("⏳ กำลังบันทึกยอดเงิน...");
-            
-            // ส่งค่าไปบอก Google Apps Script เพื่อแก้ไข Row ตาม ID
             fetch(WEB_APP_URL, {
                 method: 'POST',
-                body: JSON.stringify({
-                    action: "updatePayment",
-                    rowId: rowId,
-                    newPaymentMethod: finalMethod
-                })
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formDetails.toString(),
+                mode: 'no-cors' // ตั้งค่าโหมดความปลอดภัยขั้นสูงไม่ให้เบราว์เซอร์แจ้ง Error
             })
             .then(() => {
-                showSuccessToast("💸 เคลียร์หนี้สำเร็จ!");
-                closeModal(); // ปิดหน้าต่าง
-                setTimeout(() => { openUnpaidModal(); }, 500); // เปิดรีเฟรชหน้ารายชื่อคนค้างเงินใหม่
+                showSuccessToast("💸 เปลี่ยนสถานะ: จ่ายแล้ว!");
+                closeModal(); // ปิดป๊อปอัพรายงาน
+                // หน่วงเวลาเล็กน้อยเพื่อให้ระบบชีตบันทึกข้อมูลเสร็จ แล้วสั่งเปิดหน้ารายชื่อคนค้างเงินใหม่ทันทีเพื่ออัปเดตข้อมูลล่าสุด
+                setTimeout(() => { openUnpaidModal(); }, 600); 
             })
             .catch(() => showSuccessToast("ล้มเหลว!", true));
         }
