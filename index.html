@@ -3,82 +3,134 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ระบบ POS สำหรับ iOS และ Android</title>
+    <title>Premium POS Mobile</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        body { font-family: 'Sarabun', sans-serif; }
+        /* ซ่อนขยะหรือปุ่มดั้งเดิมของ Library ไม่ให้มารกสายตา */
+        #reader button { display: none !important; }
+        #reader img { display: none !important; }
+        #reader { border: none !important; }
+    </style>
 </head>
-<body class="bg-slate-100 min-h-screen pb-20 font-sans" onclick="unlockAudio()">
+<body class="bg-slate-50 min-h-screen pb-24 text-slate-800" onclick="unlockAudio()">
 
-    <div class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-40 flex justify-between items-center">
-        <span class="font-bold">📱 ระบบขายหน้าร้าน (iOS OK)</span>
-        <div class="flex space-x-1 text-xs font-bold">
-            <button onclick="openUnpaidModal()" class="bg-red-700 p-2 rounded-lg">🚨 ค้างชำระ</button>
-            <button onclick="openHistoryModal()" class="bg-blue-800 p-2 rounded-lg">📊 ยอดขาย</button>
+    <div class="bg-indigo-600 text-white px-4 py-3 shadow-lg sticky top-0 z-40 backdrop-blur-md bg-opacity-95">
+        <div class="max-w-md mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <span class="text-xl">⚡</span>
+                <span class="font-bold text-base tracking-wide">Premium POS</span>
+            </div>
+            <div class="flex space-x-1.5 text-xs font-bold">
+                <button onclick="openUnpaidModal()" class="bg-rose-500/20 text-rose-200 border border-rose-500/30 px-3 py-1.5 rounded-xl transition active:scale-95">🚨 ค้างชำระ</button>
+                <button onclick="openHistoryModal()" class="bg-white/10 text-indigo-100 border border-white/20 px-3 py-1.5 rounded-xl transition active:scale-95">📊 ยอดขาย</button>
+            </div>
         </div>
     </div>
 
-    <div class="max-w-md mx-auto p-3 space-y-3">
-        <div class="bg-white p-3 rounded-xl shadow-sm border">
-            <div class="flex justify-between items-center mb-2">
-                <span class="text-xs font-bold text-slate-600">กล้องสแกนสินค้า</span>
-                <button id="cameraToggleBtn" onclick="toggleCamera()" class="bg-red-500 text-white text-xs px-3 py-1 rounded-full">🔴 กล้องปิดอยู่ (คลิกเปิดเพื่อสแกน)</button>
+    <div class="max-w-md mx-auto p-4 space-y-4">
+        
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+            <div class="flex justify-between items-center mb-3">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">เครื่องสแกนบาร์โค้ด</span>
+                <button id="cameraToggleBtn" onclick="toggleCamera()" class="bg-rose-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm transition-all duration-200">
+                    🔴 กล้องปิดอยู่ (คลิกเปิด)
+                </button>
             </div>
-            <div id="reader" class="w-full bg-black rounded-lg overflow-hidden min-h-[200px]" style="width: 100%;"></div>
-            <div id="scan-status" class="text-center text-xs font-semibold text-slate-500 mt-2">[ กดปุ่มเปิดกล้องเพื่อเริ่มสแกน ]</div>
+            <div class="relative w-full bg-slate-900 rounded-xl overflow-hidden aspect-[4/3] border border-slate-200 shadow-inner flex items-center justify-center">
+                <div id="reader" class="w-full h-full object-cover"></div>
+                <div id="laser-line" class="hidden absolute left-0 right-0 h-0.5 bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.8)]"></div>
+            </div>
+            <div id="scan-status" class="text-center text-xs font-medium text-slate-400 mt-2.5">💡 แนะนำให้กดปุ่มเปิดกล้องเพื่อเริ่มขายสินค้า</div>
         </div>
 
-        <div class="bg-white p-4 rounded-xl shadow-sm border space-y-3 text-xs">
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
             <div>
-                <label class="block font-bold text-slate-600 mb-1">👤 ชื่อผู้ซื้อ / ลูกค้า</label>
-                <input type="text" id="customerName" value="ทั่วไป" class="w-full p-2 bg-yellow-50 border rounded-lg font-bold">
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">👤 ลูกค้า / ผู้ซื้อ</label>
+                <input type="text" id="customerName" value="ทั่วไป" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all">
             </div>
-            <div class="grid grid-cols-2 gap-2">
+            
+            <div class="border-t border-slate-100 my-2"></div>
+
+            <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block font-bold text-slate-600 mb-1">รหัสบาร์โค้ด</label>
-                    <input type="text" id="barcode" class="w-full p-2 bg-slate-50 border rounded-lg font-mono text-sm" placeholder="พิมพ์หรือสแกน" onchange="fetchProductData(this.value)">
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">รหัสสินค้า</label>
+                    <input type="text" id="barcode" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-slate-700" placeholder="สแกนหรือพิมพ์" onchange="fetchProductData(this.value)">
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-600 mb-1">ราคา/ชิ้น (บาท)</label>
-                    <input type="number" id="price" class="w-full p-2 border rounded-lg text-right font-bold text-blue-600 text-sm" placeholder="0.00">
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">ราคา/ชิ้น (฿)</label>
+                    <input type="number" id="price" class="w-full p-3 border border-slate-200 rounded-xl text-right font-bold text-indigo-600 focus:outline-none focus:border-indigo-500" placeholder="0.00">
                 </div>
             </div>
             <div>
-                <label class="block font-bold text-slate-600 mb-1">ชื่อสินค้า</label>
-                <input type="text" id="productName" class="w-full p-2 border rounded-lg" placeholder="ชื่อสินค้า">
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">ชื่อรายการสินค้า</label>
+                <input type="text" id="productName" class="w-full p-3 border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:border-indigo-500" placeholder="ระบุชื่อสินค้า">
             </div>
             <div class="flex space-x-2">
-                <input type="number" id="quantity" value="1" min="1" class="w-1/2 p-2 border rounded-lg text-center font-bold">
-                <button type="button" onclick="addToCart()" class="w-1/2 bg-blue-500 text-white font-bold rounded-lg shadow">➕ เพิ่มลงบิล</button>
+                <div class="w-1/3">
+                    <input type="number" id="quantity" value="1" min="1" class="w-full p-3 border border-slate-200 rounded-xl text-center font-bold text-slate-700">
+                </div>
+                <button type="button" onclick="addToCart()" class="w-2/3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition transform active:scale-95">
+                    ➕ เพิ่มลงในบิล
+                </button>
             </div>
         </div>
 
-        <div class="bg-white p-4 rounded-xl shadow-sm border space-y-2 text-xs">
-            <h3 class="font-bold text-slate-700 flex justify-between"><span>📋 รายการสินค้าในบิลนี้</span><button onclick="clearCart()" class="text-red-500">ล้างตะกร้า</button></h3>
-            <div id="cart-list" class="space-y-1 max-h-32 overflow-y-auto divide-y"></div>
-            <div class="bg-slate-50 p-2 rounded flex justify-between items-center font-bold text-sm"><span>ยอดรวมบิล:</span><span id="grand-total" class="text-emerald-600 text-lg">0.00 ฿</span></div>
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-3">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">🛒 รายการสินค้าในบิล</h3>
+                <button onclick="clearCart()" class="text-xs text-rose-500 hover:underline">ล้างทั้งหมด</button>
+            </div>
+            <div id="cart-list" class="space-y-2 max-h-40 overflow-y-auto divide-y divide-slate-50 pr-1 text-sm">
+                <p class="text-slate-400 text-center py-4 text-xs">ไม่มีสินค้าในตะกร้า</p>
+            </div>
+            <div class="bg-emerald-50/50 border border-emerald-100 p-3 rounded-xl flex justify-between items-center mt-2">
+                <span class="text-xs font-bold text-emerald-800">ยอดรวมทั้งสิ้น:</span>
+                <span id="grand-total" class="text-2xl font-black text-emerald-600">0.00 ฿</span>
+            </div>
         </div>
 
-        <div class="bg-white p-4 rounded-xl shadow-sm border space-y-2 text-xs">
-            <select id="payment" class="w-full p-2 border rounded-lg bg-white font-medium">
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 space-y-3">
+            <select id="payment" class="w-full p-3 border border-slate-200 rounded-xl bg-white font-medium text-xs text-slate-700 focus:outline-none focus:border-indigo-500">
                 <option value="โอนเงิน">💸 โอนเงินผ่านธนาคาร</option>
                 <option value="เงินสด">💵 เงินสด</option>
                 <option value="ยังไม่ได้ชำระเงิน">🚨 ยังไม่ได้ชำระเงิน (ติดหนี้ไว้ก่อน)</option>
             </select>
-            <button type="button" id="checkoutBtn" onclick="submitOrder()" disabled class="w-full bg-slate-400 text-white font-bold py-3 rounded-xl text-sm shadow cursor-not-allowed">🛍️ ยืนยันการขาย (ส่งเข้า Google Sheet)</button>
+            <button type="button" id="checkoutBtn" onclick="submitOrder()" disabled 
+                class="w-full bg-slate-300 text-slate-500 font-bold py-4 rounded-xl text-base shadow-sm cursor-not-allowed transition-all duration-200">
+                🚀 ยืนยันการขาย (บันทึกข้อมูล)
+            </button>
         </div>
     </div>
 
-    <div id="reportModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-end justify-center"><div class="bg-white w-full max-w-md rounded-t-2xl max-h-[80vh] flex flex-col"><div class="p-4 border-b flex justify-between items-center"><h2 id="modalTitle" class="font-bold text-sm">รายงาน</h2><button onclick="closeModal()" class="text-slate-400 font-bold p-1">✕</button></div><div id="modalContent" class="p-4 overflow-y-auto flex-1 space-y-3 text-xs"></div></div></div>
+    <div id="reportModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end justify-center transition-all duration-300">
+        <div class="bg-white w-full max-w-md rounded-t-3xl max-h-[85vh] flex flex-col shadow-2xl animate-slide-up">
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-3xl">
+                <h2 id="modalTitle" class="font-bold text-sm text-slate-700">รายงาน</h2>
+                <button onclick="closeModal()" class="w-8 h-8 bg-slate-200 hover:bg-slate-300 text-slate-500 rounded-full font-bold flex items-center justify-center transition">✕</button>
+            </div>
+            <div id="modalContent" class="p-4 overflow-y-auto flex-1 space-y-3 text-xs"></div>
+        </div>
+    </div>
+
+    <div id="successToast" class="hidden fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-slate-900/90 text-white px-6 py-5 rounded-2xl flex flex-col items-center justify-center space-y-2 z-50 shadow-2xl backdrop-blur-md border border-white/10 transition-all duration-300 max-w-[200px] text-center">
+        <div class="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center text-xl font-bold animate-bounce">✓</div>
+        <div class="font-bold text-sm" id="toastMessage">บันทึกสำเร็จ</div>
+    </div>
 
     <script>
         // ⚠️ วาง URL ของ Google Apps Script ของคุณที่นี่ (ลงท้ายด้วย /exec)
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx92ov484ob-O4ncwwjpzhD2E5wgwmuhAguCRD8gBiVpyhCiyqLru0LTCqlnHjwHhtFvg/exec"; 
         
         let cart = [];
-        let html5QrcodeScanner = null;
+        let html5Qrcode = null;
         let isCameraOpen = false;
         let audioCtx = null;
-        let isProcessing = false; // ตัวแปรป้องกันการสแกนซ้อนบน iOS
+        let isProcessing = false;
 
         function unlockAudio() {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -92,81 +144,171 @@
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 osc.connect(gain); gain.connect(audioCtx.destination);
-                osc.type = 'sine'; osc.frequency.setValueAtTime(1200, audioCtx.currentTime); // ความถี่ชัดเจนสำหรับลำโพง iPhone
-                gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                osc.type = 'sine'; osc.frequency.setValueAtTime(1000, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
                 osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.08);
             } catch(e) { console.log(e); }
         }
 
-        // ปรับปรุงส่วนเปิดกล้อง: ใช้ Html5QrcodeScanner สำหรับ iOS จะเสถียรที่สุดในการวาดสตรีมวิดีโอ
+        // ฟังก์ชันแสดงการแจ้งเตือนแบบสวยงามแทนคำสั่ง alert
+        function showSuccessToast(message) {
+            const toast = document.getElementById('successToast');
+            document.getElementById('toastMessage').innerText = message;
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 2000); // แสดงผล 2 วินาทีแล้วหายไปเอง
+        }
+
+        // 🛠️ ปรับแต่งโหมดเปิดกล้องให้เสถียรที่สุดสำหรับระบบ iOS (iPhone/Safari)
         function startCamera() {
-            document.getElementById('scan-status').innerText = "⏳ กำลังเปิดกล้องหลัง (iOS รองรับ)...";
+            document.getElementById('scan-status').innerText = "⏳ กำลังเปิดกล้องหลังแบบเสถียร...";
             isProcessing = false;
-
-            // ตั้งค่ากรอบเล็งให้เหมาะกับกล้อง iOS และบังคับใช้กล้องหลัง (environment)
-            html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
-                fps: 10, 
-                qrbox: { width: 260, height: 140 },
-                rememberLastUsedCamera: true,
-                supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
-                videoConstraints: { facingMode: "environment" }
-            }, false);
-
-            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+            html5Qrcode = new Html5Qrcode("reader");
             
-            isCameraOpen = true;
-            document.getElementById('cameraToggleBtn').innerText = "🟢 กล้องเปิดอยู่ (คลิกปิด)";
-            document.getElementById('cameraToggleBtn').className = "bg-emerald-500 text-white text-xs px-3 py-1 rounded-full";
-            document.getElementById('scan-status').innerText = "🎯 เล็งบาร์โค้ดให้อยู่ในกรอบสี่เหลี่ยม";
+            // ล็อกคอนสเตรนวิดีโอแบบขนาดพอดี ไม่ให้ชิปวิดีโอ iOS ค้างชะงัก
+            const videoConstraints = {
+                facingMode: "environment",
+                width: { min: 640, ideal: 640, max: 1024 },
+                height: { min: 480, ideal: 480, max: 768 }
+            };
+
+            html5Qrcode.start(
+                videoConstraints, 
+                { fps: 15, qrbox: { width: 250, height: 130 } }, 
+                onScanSuccess, 
+                () => {}
+            )
+            .then(() => {
+                isCameraOpen = true;
+                document.getElementById('laser-line').classList.remove('hidden');
+                document.getElementById('cameraToggleBtn').innerText = "🟢 เปิดอยู่ (คลิกปิด)";
+                document.getElementById('cameraToggleBtn').className = "bg-emerald-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm";
+                document.getElementById('scan-status').innerText = "🎯 เล็งบาร์โค้ดให้อยู่ในกรอบเลนส์";
+            }).catch(err => {
+                document.getElementById('scan-status').innerText = "❌ ไม่สามารถเปิดกล้องได้ กรุณากดใหม่อีกครั้ง";
+            });
         }
 
         function stopCamera() {
-            if (html5QrcodeScanner) {
-                html5QrcodeScanner.clear().then(() => {
+            if (html5Qrcode && isCameraOpen) {
+                html5Qrcode.stop().then(() => {
                     isCameraOpen = false;
-                    html5QrcodeScanner = null;
+                    document.getElementById('laser-line').classList.add('hidden');
                     document.getElementById('reader').innerHTML = "";
-                    document.getElementById('cameraToggleBtn').innerText = "🔴 กล้องปิดอยู่ (คลิกเปิดเพื่อสแกน)";
-                    document.getElementById('cameraToggleBtn').className = "bg-red-500 text-white text-xs px-3 py-1 rounded-full";
-                }).catch(err => console.error("ปิดกล้องพลาด:", err));
+                    document.getElementById('cameraToggleBtn').innerText = "🔴 ปิดอยู่ (คลิกเปิด)";
+                    document.getElementById('cameraToggleBtn').className = "bg-rose-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm";
+                    document.getElementById('scan-status').innerText = "💡 พร้อมเปิดกล้องใหม่อีกครั้ง";
+                }).catch(e => console.log(e));
             }
         }
 
         function toggleCamera() { isCameraOpen ? stopCamera() : startCamera(); }
 
-        // เมื่อสแกนติดสำเร็จบน iOS
+        // เมื่อสแกนติดสำเร็จ (แก้ปัญหาดับภาพค้างบน iOS)
         function onScanSuccess(decodedText) { 
-            if (isProcessing) return; // หากกำลังประมวลผลอยู่ ให้ข้ามเฟรมนี้ไป (กันสแกนซ้ำ)
+            if (isProcessing) return;
             isProcessing = true;
 
-            playBeepSound(); // เล่นเสียงติ๊ด
-            if (navigator.vibrate) navigator.vibrate([80, 40, 80]); // สั่น
+            playBeepSound();
+            if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
             
-            // นำรหัสสินค้าที่ได้ใส่ลงฟอร์มทันที
             document.getElementById('barcode').value = decodedText; 
-            document.getElementById('scan-status').innerHTML = "✅ สแกนสำเร็จ: <span class='text-blue-600 font-bold'>" + decodedText + "</span>";
-            
             fetchProductData(decodedText); 
 
-            // ปล่อยเวลาให้ระบบ iOS ได้บันทึกค่าเรียบร้อย 0.3 วินาที แล้วค่อยสั่งปิดกล้อง เพื่อไม่ให้แอปค้าง
+            // ปรับดีเลย์เล็กน้อยก่อนปิดสัญญาณวิดีโอ เพื่อให้ iOS ทำงานลื่นไหล
             setTimeout(() => {
-                stopCamera(); 
-            }, 300);
+                stopCamera();
+                showSuccessToast("สแกนรหัสติดแล้ว!");
+            }, 250);
         }
 
-        function onScanFailure(error) {
-            // ปล่อยข้ามเฟรมเมื่อกล้องยังไม่เจอบาร์โค้ด (จำเป็นสำหรับ iOS เพื่อไม่ให้สคริปต์หยุดทำงาน)
+        // ระบบจัดการฟอร์มและตะกร้าสินค้า (UI ใหม่เรียบหรู)
+        function fetchProductData(bc) { 
+            if(!bc) return; 
+            document.getElementById('productName').value = "⏳ กำลังค้นหาข้อมูลสินค้า..."; 
+            fetch(`${WEB_APP_URL}?barcode=${bc}`).then(r=>r.json()).then(d=>{ 
+                if(d.found){ 
+                    document.getElementById('productName').value = d.name; 
+                    document.getElementById('price').value = d.price; 
+                } else { 
+                    document.getElementById('productName').value = "ไม่พบคลังสินค้า (สามารถพิมพ์ตั้งชื่อเองได้)"; 
+                } 
+            }); 
         }
 
-        // ส่วนฟังก์ชันจัดการข้อมูลหลัก (ยกชุดความสามารถเดิมมาทำงานต่อได้สมบูรณ์)
-        function fetchProductData(bc) { if(!bc) return; document.getElementById('productName').value = "⏳ กำลังค้นหาใน Sheets..."; fetch(`${WEB_APP_URL}?barcode=${bc}`).then(r=>r.json()).then(d=>{ if(d.found){ document.getElementById('productName').value = d.name; document.getElementById('price').value = d.price; } else { document.getElementById('productName').value = "❌ ไม่พบสินค้าในระบบ (กรอกเองได้)"; } }); }
-        function addToCart() { const b = document.getElementById('barcode').value, n = document.getElementById('productName').value, p = parseFloat(document.getElementById('price').value), q = parseInt(document.getElementById('quantity').value); if(!b || !n || isNaN(p)) { alert("กรุณาใส่ข้อมูลให้ครบครับ"); return; } cart.push({barcode:b, name:n, price:p, quantity:q}); updateCartUI(); document.getElementById('barcode').value=""; document.getElementById('productName').value=""; document.getElementById('price').value=""; document.getElementById('scan-status').innerText = "[ กดปุ่มเปิดกล้องเพื่อสแกนชิ้นต่อไป ]"; }
-        function updateCartUI() { const list = document.getElementById('cart-list'); let html = "", total = 0; cart.forEach((item, i) => { total += (item.price * item.quantity); html += `<div class="flex justify-between py-1"><span>${item.name} x${item.quantity}</span><span class="font-bold">${(item.price * item.quantity).toFixed(2)} ฿</span></div>`; }); list.innerHTML = cart.length ? html : "<p class='text-slate-400 text-center py-2'>ไม่มีสินค้าในตะกร้า</p>"; document.getElementById('grand-total').innerText = total.toFixed(2) + " ฿"; document.getElementById('checkoutBtn').disabled = !cart.length; document.getElementById('checkoutBtn').className = cart.length ? "w-full bg-emerald-500 text-white font-bold py-3 rounded-xl text-sm shadow" : "w-full bg-slate-400 text-white font-bold py-3 rounded-xl text-sm shadow cursor-not-allowed"; }
+        function addToCart() { 
+            const b = document.getElementById('barcode').value, n = document.getElementById('productName').value, p = parseFloat(document.getElementById('price').value), q = parseInt(document.getElementById('quantity').value); 
+            if(!b || !n || isNaN(p)) { showSuccessToast("กรอกข้อมูลไม่ครบ!"); return; } 
+            cart.push({barcode:b, name:n, price:p, quantity:q}); 
+            updateCartUI(); 
+            document.getElementById('barcode').value=""; document.getElementById('productName').value=""; document.getElementById('price').value=""; 
+            showSuccessToast("เพิ่มลงบิลสำเร็จ");
+        }
+
+        function updateCartUI() { 
+            const list = document.getElementById('cart-list'); let html = "", total = 0; 
+            cart.forEach((item, i) => { 
+                total += (item.price * item.quantity); 
+                html += `<div class="flex justify-between items-center py-2 text-slate-700 font-medium"><div class="truncate"><div class="font-bold">${item.name}</div><div class="text-[11px] text-slate-400 font-mono">${item.barcode} | ${item.price} ฿ × ${item.quantity}</div></div><span class="font-bold text-slate-800">${(item.price * item.quantity).toFixed(2)} ฿</span></div>`; 
+            }); 
+            list.innerHTML = cart.length ? html : "<p class='text-slate-400 text-center py-4 text-xs'>ไม่มีสินค้าในตะกร้า</p>"; 
+            document.getElementById('grand-total').innerText = total.toFixed(2) + " ฿"; 
+            document.getElementById('checkoutBtn').disabled = !cart.length; 
+            document.getElementById('checkoutBtn').className = cart.length ? "w-full bg-indigo-600 text-white font-bold py-4 rounded-xl text-base shadow-md active:scale-95 transition-all duration-150 cursor-pointer" : "w-full bg-slate-300 text-slate-500 font-bold py-4 rounded-xl text-base shadow-sm cursor-not-allowed"; 
+        }
+
         function clearCart() { cart = []; updateCartUI(); }
-        function submitOrder() { if(!cart.length) return; const cust = document.getElementById('customerName').value.trim(); const pay = document.getElementById('payment').value; if(pay === "ยังไม่ได้ชำระเงิน" && cust === "ทั่วไป") { alert("⚠️ ถ้าลูกค้ายังไม่จ่ายเงิน กรุณาใส่ชื่อผู้ซื้อด้วยครับ"); return; } document.getElementById('checkoutBtn').disabled = true; document.getElementById('checkoutBtn').innerText = "⏳ กำลังบันทึก..."; fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ payment: pay, customer: cust, items: cart }) }).then(() => { alert("🎉 บันทึกสำเร็จ!"); clearCart(); document.getElementById('customerName').value = "ทั่วไป"; }).finally(() => { document.getElementById('checkoutBtn').innerText = "🛍️ ยืนยันการขาย (ส่งเข้า Google Sheet)"; }); }
-        function openHistoryModal() { showModal("📊 ประวัติยอดขายรายวัน", "⏳ กำลังโหลด..."); fetch(`${WEB_APP_URL}?action=getHistory`).then(r=>r.json()).then(data => { const grouped = {}; data.forEach(i => { if(!grouped[i.date]) grouped[i.date] = {items:[], total:0}; grouped[i.date].items.push(i); grouped[i.date].total += i.total; }); let html = ""; for(const d in grouped) { html += `<div class="bg-slate-50 border p-3 rounded-xl mb-2"><div class="flex justify-between font-bold border-b pb-1 text-slate-700"><span>📅 ${d}</span><span class="text-blue-600">รวม: ${grouped[d].total.toFixed(2)} ฿</span></div><div class="divide-y divide-slate-100 max-h-32 overflow-y-auto">`; grouped[d].items.forEach(i => { html += `<div class="flex justify-between py-1 text-slate-500"><span>[${i.time}] ${i.name} (${i.customer})</span><span>${i.total.toFixed(2)} ฿ (${i.payment})</span></div>`; }); html += `</div></div>`; } document.getElementById('modalContent').innerHTML = html || "ไม่มีข้อมูล"; }); }
-        function openUnpaidModal() { showModal("🚨 รายชื่อลูกค้าค้างชำระเงิน", "⏳ กำลังโหลด..."); fetch(`${WEB_APP_URL}?action=getHistory`).then(r=>r.json()).then(data => { const unpaid = data.filter(i => i.payment === "ยังไม่ได้ชำระเงิน"); const debts = {}; unpaid.forEach(i => { if(!debts[i.customer]) debts[i.customer] = {total:0, list:[]}; debts[i.customer].total += i.total; debts[i.customer].list.push(i); }); let html = ""; for(const c in debts) { html += `<div class="bg-red-50 border border-red-200 p-3 rounded-xl mb-2"><div class="flex justify-between font-bold text-red-800 border-b border-red-100 pb-1"><span>👤 คุณ ${c}</span><span>ยอดค้าง: ${debts[c].total.toFixed(2)} ฿</span></div><div class="text-[11px] text-slate-500 pt-1">`; debts[c].list.forEach(i => { html += `<div>• ${i.date} - ${i.name} (${i.total} ฿)</div>`; }); html += `</div></div>`; } document.getElementById('modalContent').innerHTML = html || "🎉 ไม่มีลูกค้าค้างชำระเงิน"; }); }
+
+        function submitOrder() { 
+            if(!cart.length) return; 
+            const cust = document.getElementById('customerName').value.trim(); 
+            const pay = document.getElementById('payment').value; 
+            if(pay === "ยังไม่ได้ชำระเงิน" && cust === "ทั่วไป") { showSuccessToast("กรุณาใส่ชื่อผู้ค้างจ่าย!"); return; } 
+            
+            document.getElementById('checkoutBtn').disabled = true; 
+            document.getElementById('checkoutBtn').innerText = "⏳ กำลังส่งข้อมูลเข้าคลัง Sheet..."; 
+
+            fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ payment: pay, customer: cust, items: cart }) }) 
+            .then(() => { 
+                showSuccessToast("🎉 บันทึกยอดขายสำเร็จ!"); 
+                clearCart(); 
+                document.getElementById('customerName').value = "ทั่วไป"; 
+            }).finally(() => { 
+                document.getElementById('checkoutBtn').innerText = "🚀 ยืนยันการขาย (บันทึกข้อมูล)"; 
+                updateCartUI();
+            }); 
+        }
+
+        // ระบบแสดงรายงานใน Pop-up รูปแบบใหม่ (รายวัน / ค้างชำระ)
+        function openHistoryModal() { 
+            showModal("📊 รายงานสรุปยอดขายรายวัน", "<p class='text-center py-4 text-slate-400 animate-pulse'>⏳ กำลังเชื่อมโยง Google Sheet...</p>"); 
+            fetch(`${WEB_APP_URL}?action=getHistory`).then(r=>r.json()).then(data => { 
+                const grouped = {}; data.forEach(i => { if(!grouped[i.date]) grouped[i.date] = {items:[], total:0}; grouped[i.date].items.push(i); grouped[i.date].total += i.total; }); 
+                let html = ""; for(const d in grouped) { 
+                    html += `<div class="bg-slate-50 border border-slate-200/60 p-3 rounded-xl mb-2 shadow-sm"><div class="flex justify-between font-bold border-b border-slate-200/50 pb-1.5 text-slate-700 text-xs"><span>📅 ${d}</span><span class="text-indigo-600">รวม: ${grouped[d].total.toFixed(2)} ฿</span></div><div class="divide-y divide-slate-100 max-h-32 overflow-y-auto">`; 
+                    grouped[d].items.forEach(i => { html += `<div class="flex justify-between py-1.5 text-slate-600 text-[11px]"><span>[${i.time}] ${i.name} (${i.customer})</span><span class="font-bold">${i.total.toFixed(2)} ฿ <span class="font-normal text-[10px] ${i.payment === 'ยังไม่ได้ชำระเงิน' ? 'text-rose-500' : 'text-slate-400'}">(${i.payment})</span></span></div>`; }); 
+                    html += `</div></div>`; 
+                } 
+                document.getElementById('modalContent').innerHTML = html || "ไม่มีประวัติการขายในคลัง"; 
+            }); 
+        }
+
+        function openUnpaidModal() { 
+            showModal("🚨 รายชื่อลูกค้าค้างจ่ายเงิน", "<p class='text-center py-4 text-slate-400 animate-pulse'>⏳ กำลังประมวลผลยอดค้างจ่าย...</p>"); 
+            fetch(`${WEB_APP_URL}?action=getHistory`).then(r=>r.json()).then(data => { 
+                const unpaid = data.filter(i => i.payment === "ยังไม่ได้ชำระเงิน"); 
+                const debts = {}; unpaid.forEach(i => { if(!debts[i.customer]) debts[i.customer] = {total:0, list:[]}; debts[i.customer].total += i.total; debts[i.customer].list.push(i); }); 
+                let html = ""; for(const c in debts) { 
+                    html += `<div class="bg-rose-50/70 border border-rose-100 p-3 rounded-xl mb-2"><div class="flex justify-between font-bold text-rose-900 border-b border-rose-100 pb-1.5 text-xs"><span>👤 คุณ ${c}</span><span class="bg-white border border-rose-200 px-2 py-0.5 rounded-md text-rose-600 font-black">ค้าง: ${debts[c].total.toFixed(2)} ฿</span></div><div class="text-[10px] text-slate-500 pt-1 space-y-0.5">`; 
+                    debts[c].list.forEach(i => { html += `<div>• ${i.date} - ${i.name} (${i.total} ฿)</div>`; }); 
+                    html += `</div></div>`; 
+                } 
+                document.getElementById('modalContent').innerHTML = html || "🎉 ยอดเยี่ยม! ไม่มีคนติดค้างเงินในระบบ"; 
+            }); 
+        }
+
         function showModal(title, text) { document.getElementById('reportModal').classList.remove('hidden'); document.getElementById('modalTitle').innerText = title; document.getElementById('modalContent').innerHTML = text; }
         function closeModal() { document.getElementById('reportModal').classList.add('hidden'); }
     </script>
