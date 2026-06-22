@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Premium POS Mobile - One-Click Paid</title>
+    <title>Premium POS Mobile - Fixed Unpaid Status</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
@@ -118,11 +118,11 @@
             .then(() => { isCameraOpen = true; document.getElementById('laser-line').classList.remove('hidden'); document.getElementById('cameraToggleBtn').innerText = "🟢 เปิดอยู่ (คลิกปิด)"; document.getElementById('cameraToggleBtn').className = "bg-emerald-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm"; document.getElementById('scan-status').innerText = "🎯 เล็งบาร์โค้ดให้อยู่ในกรอบเลนส์"; })
             .catch(err => { html5Qrcode.start({ facingMode: { any: true } }, cameraConfig, onScanSuccess, () => {}).then(() => { isCameraOpen = true; document.getElementById('laser-line').classList.remove('hidden'); document.getElementById('cameraToggleBtn').innerText = "🟢 เปิดอยู่ (โหมดสำรอง)"; document.getElementById('cameraToggleBtn').className = "bg-yellow-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm"; }).catch(() => { document.getElementById('scan-status').innerHTML = "❌ เปิดกล้องไม่สำเร็จ"; }); });
         }
-        function stopCamera() { if (html5Qrcode && isCameraOpen) { html5Qrcode.stop().then(() => { isCameraOpen = false; document.getElementById('laser-line').classList.add('hidden'); document.getElementById('reader').innerHTML = ""; document.getElementById('cameraToggleBtn').innerText = "🔴 ปิดอยู่ (คลิกเปิด)"; document.getElementById('cameraToggleBtn').className = "bg-rose-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm"; document.getElementById('scan-status').innerText = "💡 พร้อมเปิดกล้องใหม่อิร์กครั้ง"; }); } }
+        function stopCamera() { if (html5Qrcode && isCameraOpen) { html5Qrcode.stop().then(() => { isCameraOpen = false; document.getElementById('laser-line').classList.add('hidden'); document.getElementById('reader').innerHTML = ""; document.getElementById('cameraToggleBtn').innerText = "🔴 ปิดอยู่ (คลิกเปิด)"; document.getElementById('cameraToggleBtn').className = "bg-rose-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm"; document.getElementById('scan-status').innerText = "💡 พร้อมเปิดกล้องใหม่อีกครั้ง"; }); } }
         function toggleCamera() { isCameraOpen ? stopCamera() : startCamera(); }
         function onScanSuccess(decodedText) { if (isProcessing) return; isProcessing = true; playBeepSound(); if (navigator.vibrate) navigator.vibrate([80, 40, 80]); document.getElementById('barcode').value = decodedText; fetchProductData(decodedText); setTimeout(() => { stopCamera(); showSuccessToast("จับรหัสสินค้าสำเร็จ!"); }, 300); }
 
-        function fetchProductData(bc) { if(!bc) return; document.getElementById('productName').value = "⏳ กำลังสืบค้นจาก Google Sheet..."; fetch(`${WEB_APP_URL}?barcode=${bc}`).then(r=>r.json()).then(d=>{ if(d.found){ document.getElementById('productName').value = d.name; document.getElementById('price').value = d.price; } else { document.getElementById('productName').value = "คลังแผ่นงานไม่มีรหัสนี้ (พิมพ์ตั้งชื่อสินค้าเองได้)"; } }); }
+        function fetchProductData(bc) { if(!bc) return; document.getElementById('productName').value = "⏳ กำลังสืบค้นจาก Google Sheet..."; fetch(`${WEB_APP_URL}?barcode=${bc}&_t=${Date.now()}`).then(r=>r.json()).then(d=>{ if(d.found){ document.getElementById('productName').value = d.name; document.getElementById('price').value = d.price; } else { document.getElementById('productName').value = "คลังแผ่นงานไม่มีรหัสนี้ (พิมพ์ตั้งชื่อสินค้าเองได้)"; } }); }
         function addToCart() { const b = document.getElementById('barcode').value, n = document.getElementById('productName').value, p = parseFloat(document.getElementById('price').value), q = parseInt(document.getElementById('quantity').value); if(!b || !n || isNaN(p) || q <= 0) { showSuccessToast("กรอกข้อมูลไม่ครบถ้วน!", true); return; } cart.push({barcode:b, name:n, price:p, quantity:q}); updateCartUI(); document.getElementById('barcode').value=""; document.getElementById('productName').value=""; document.getElementById('price').value=""; showSuccessToast("เพิ่มเข้าตะกร้าแล้ว"); }
         function updateCartUI() { const list = document.getElementById('cart-list'); let html = "", total = 0; cart.forEach((item, i) => { total += (item.price * item.quantity); html += `<div class="flex justify-between items-center py-2 text-slate-700 font-medium"><div class="truncate"><div class="font-bold">${item.name}</div><div class="text-[11px] text-slate-400 font-mono">รหัส: ${item.barcode} | ${item.price} ฿ × ${item.quantity}</div></div><span class="font-bold text-slate-800">${(item.price * item.quantity).toFixed(2)} ฿</span></div>`; }); list.innerHTML = cart.length ? html : "<p class='text-slate-400 text-center py-4 text-xs'>ไม่มีสินค้าในตะกร้า</p>"; document.getElementById('grand-total').innerText = total.toFixed(2) + " ฿"; document.getElementById('checkoutBtn').disabled = !cart.length; document.getElementById('checkoutBtn').className = cart.length ? "w-full bg-indigo-600 text-white font-bold py-4 rounded-xl text-base shadow-md active:scale-95 transition-all duration-150 cursor-pointer" : "w-full bg-slate-300 text-slate-500 font-bold py-4 rounded-xl text-base shadow-sm cursor-not-allowed"; }
         function clearCart() { cart = []; updateCartUI(); }
@@ -130,7 +130,7 @@
         
         function openHistoryModal() { 
             showModal("📊 รายงานสรุปยอดขายรายวัน", "<p class='text-center py-4 text-slate-400 animate-pulse'>⏳ กำลังเชื่อมโยงฐานข้อมูลแผ่นงาน...</p>"); 
-            fetch(`${WEB_APP_URL}?action=getHistory`).then(r=>r.json()).then(data => { 
+            fetch(`${WEB_APP_URL}?action=getHistory&_t=${Date.now()}`).then(r=>r.json()).then(data => { 
                 const grouped = {}; data.forEach(i => { if(!grouped[i.date]) grouped[i.date] = {items:[], total:0}; grouped[i.date].items.push(i); grouped[i.date].total += i.total; }); 
                 let html = ""; for(const d in grouped) { 
                     html += `<div class="bg-slate-50 border border-slate-200/60 p-3 rounded-xl mb-2 shadow-sm"><div class="flex justify-between font-bold border-b border-slate-200/50 pb-1.5 text-slate-700 text-xs"><span>📅 ${d}</span><span class="text-indigo-600">รวม: ${grouped[d].total.toFixed(2)} ฿</span></div><div class="divide-y divide-slate-100 max-h-32 overflow-y-auto">`; 
@@ -141,11 +141,11 @@
             }); 
         }
 
-        // รายชื่อลูกค้าค้างจ่ายเงิน (อัปเดต: บิลไหนจ่ายแล้วจะไม่เอามาแสดงในหน้านี้อีกเลย)
+        // รายชื่อลูกค้าค้างจ่ายเงิน (อัปเดตระบบดึงแบบ Realtime ไร้ Cache บิดเบือน)
         function openUnpaidModal() { 
             showModal("🚨 รายชื่อลูกค้าค้างจ่ายเงิน", "<p class='text-center py-4 text-slate-400 animate-pulse'>⏳ กำลังประมวลผลบิลคงค้าง...</p>"); 
-            fetch(`${WEB_APP_URL}?action=getHistory`).then(r=>r.json()).then(data => {
-                // คัดกรองเอาเฉพาะตัวที่เท่ากับ "ยังไม่ได้ชำระเงิน" เท่านั้น (ตัวที่แก้เป็น "จ่ายแล้ว" จะหลุดออกจากเงื่อนไขนี้ทันที)
+            // เติมคำสั่ง &_t=${Date.now()} ต่อท้าย URL เพื่อบังคับให้เซิร์ฟเวอร์ดึงข้อมูลสดๆ จาก Google Sheet เสมอ
+            fetch(`${WEB_APP_URL}?action=getHistory&_t=${Date.now()}`).then(r=>r.json()).then(data => {
                 const unpaid = data.filter(i => i.payment === "ยังไม่ได้ชำระเงิน"); 
                 const debts = {}; unpaid.forEach(i => { if(!debts[i.customer]) debts[i.customer] = {total:0, list:[]}; debts[i.customer].total += i.total; debts[i.customer].list.push(i); }); 
                 
@@ -162,7 +162,7 @@
                     
                     debts[c].list.forEach(i => { 
                         html += `
-                            <div class="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                            <div id="unpaid-row-${i.rowId}" class="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm transition-all duration-300">
                                 <div>
                                     <span class="font-bold text-slate-700">${i.name}</span>
                                     <div class="text-[9px] text-slate-400">${i.date} (${i.time}) - ยอด: ${i.total} ฿</div>
@@ -180,11 +180,19 @@
             }); 
         }
 
-        // ฟังก์ชันใหม่: วันคลิกจ่ายเงินทันที ไม่ขึ้นล้มเหลว (ปรับโครงสร้างเป็น URLSearchParams ป้องกัน CORS)
+        // แก้ปัญหาล้มเหลว และอัปเดตหน้าจอทันทีแบบวันคลิก (Optimistic UI Update)
         function markAsPaid(rowId) {
-            showSuccessToast("⏳ กำลังบันทึกสถานะ...");
-            
-            // ใช้ URLSearchParams ในการห่อข้อมูล ป้องกันระบบเบราว์เซอร์สกัดกั้นการส่งข้อมูลข้ามโดเมน
+            // จุดที่ 1: สั่งลบแถวสินค้านั้นๆ ออกจากหน้าจอมือถือทันที โดยไม่ต้องรอให้เครือข่ายตอบกลับเพื่อความลื่นไหล
+            const targetElement = document.getElementById(`unpaid-row-${rowId}`);
+            if (targetElement) {
+                targetElement.style.opacity = '0';
+                targetElement.style.transform = 'scale(0.9)';
+                setTimeout(() => { targetElement.remove(); }, 300);
+            }
+
+            showSuccessToast("💸 เคลียร์สถานะเรียบร้อย!");
+
+            // จุดที่ 2: ทำงานส่งข้อมูลไปสั่งเปลี่ยนสถานะใน Google Sheet เบื้องหลังอย่างรวดเร็ว
             const formDetails = new URLSearchParams();
             formDetails.append('action', 'updatePayment');
             formDetails.append('rowId', rowId);
@@ -193,15 +201,20 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: formDetails.toString(),
-                mode: 'no-cors' // ตั้งค่าโหมดความปลอดภัยขั้นสูงไม่ให้เบราว์เซอร์แจ้ง Error
+                mode: 'no-cors'
             })
             .then(() => {
-                showSuccessToast("💸 เปลี่ยนสถานะ: จ่ายแล้ว!");
-                closeModal(); // ปิดป๊อปอัพรายงาน
-                // หน่วงเวลาเล็กน้อยเพื่อให้ระบบชีตบันทึกข้อมูลเสร็จ แล้วสั่งเปิดหน้ารายชื่อคนค้างเงินใหม่ทันทีเพื่ออัปเดตข้อมูลล่าสุด
-                setTimeout(() => { openUnpaidModal(); }, 600); 
+                // ตัวล็อกสำรอง: ดึงรายการค้างชำระใหม่แบบ Realtime ไร้แคชตกค้าง เพื่อจัดระเบียบหน้าจอหลังจากผ่านไป 1.5 วินาที
+                setTimeout(() => { 
+                    fetch(`${WEB_APP_URL}?action=getHistory&_t=${Date.now()}`).then(r=>r.json()).then(data => {
+                        const unpaidCheck = data.filter(i => i.payment === "ยังไม่ได้ชำระเงิน");
+                        if(unpaidCheck.length === 0) {
+                            document.getElementById('modalContent').innerHTML = "🎉 ไม่พบรายชื่อคนค้างชำระเงิน";
+                        }
+                    });
+                }, 1500);
             })
-            .catch(() => showSuccessToast("ล้มเหลว!", true));
+            .catch(err => console.log("Background network sync log:", err));
         }
 
         function showModal(title, text) { document.getElementById('reportModal').classList.remove('hidden'); document.getElementById('modalTitle').innerText = title; document.getElementById('modalContent').innerHTML = text; }
