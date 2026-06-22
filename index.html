@@ -86,22 +86,38 @@
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx92ov484ob-O4ncwwjpzhD2E5wgwmuhAguCRD8gBiVpyhCiyqLru0LTCqlnHjwHhtFvg/exec"; 
         let cart = [];
 
-        // ------------------ ระบบสแกนกล้อง ------------------
-        const html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
-            fps: 12, 
-            qrbox: { width: 260, height: 140 },
-            rememberLastUsedCamera: true,
-            supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
-        });
+// ------------------ ระบบสแกนกล้อง (บังคับใช้กล้องหลัง) ------------------
+// เปลี่ยนมาใช้คลาส Html5Qrcode แทนเพื่อเปิดสิทธิ์เลือกกล้องได้เจาะจงขึ้น
+const html5Qrcode = new Html5Qrcode("reader");
 
-        function onScanSuccess(decodedText) {
-            if (navigator.vibrate) navigator.vibrate(80); 
-            document.getElementById('barcode').value = decodedText;
-            document.getElementById('scan-status').innerHTML = "🔍 กำลังดึงข้อมูลรหัส: <span class='text-blue-600 font-bold'>" + decodedText + "</span>";
-            
-            // เรียกฟังก์ชันไปดึงข้อมูลจาก Google Sheets ทันทีที่สแกนเจอ
-            fetchProductData(decodedText);
-        }
+const qrConfig = { 
+    fps: 12, 
+    qrbox: { width: 260, height: 140 } 
+};
+
+// สั่งให้ระบบเลือกใช้กล้องหลังโดยระบุ "environment" (ถ้ากล้องหน้าจะใช้ "user")
+html5Qrcode.start(
+    { facingMode: "environment" }, 
+    qrConfig, 
+    onScanSuccess, 
+    () => {} // ปล่อยว่างไว้เมื่อสแกนไม่ติดในเฟรมนั้นๆ
+)
+.catch(err => {
+    // หากเกิดข้อผิดพลาดในการเปิดกล้องหลัง ให้ลองเปิดด้วยกล้องเท่าที่มีแทน
+    console.error("ไม่สามารถเปิดกล้องหลังแบบระบุเจาะจงได้ กำลังลองเปิดโหมดทั่วไป...", err);
+    
+    // แบบสำรอง: ถ้าเครื่องไม่มีกล้องหลัง (เช่น แท็บเล็ตบางรุ่น) ให้เปิดกล้องอะไรก็ได้ที่หาเจอ
+    html5Qrcode.start({ facingMode: { any: true } }, qrConfig, onScanSuccess, () => {});
+});
+
+// ฟังก์ชันเมื่อสแกนสำเร็จ (ใช้ฟังก์ชันเดิมของคุณได้เลย)
+function onScanSuccess(decodedText) {
+    if (navigator.vibrate) navigator.vibrate(80); 
+    document.getElementById('barcode').value = decodedText;
+    document.getElementById('scan-status').innerHTML = "🔍 กำลังดึงข้อมูลรหัส: <span class='text-blue-600 font-bold'>" + decodedText + "</span>";
+    
+    fetchProductData(decodedText);
+}
         html5QrcodeScanner.render(onScanSuccess, () => {});
 
         // ------------------ ดึงข้อมูลสินค้าจาก Google Sheet ------------------
