@@ -119,8 +119,78 @@
         function playBeepSound() { try { unlockAudio(); if (!audioCtx) return; const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type = 'sine'; osc.frequency.setValueAtTime(1000, audioCtx.currentTime); gain.gain.setValueAtTime(0.4, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08); osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.08); } catch(e) { console.log(e); } }
         function showSuccessToast(message, isError = false) { const toast = document.getElementById('successToast'); const icon = document.getElementById('toastIcon'); document.getElementById('toastMessage').innerText = message; if(isError) { icon.innerText = "❌"; icon.className = "w-12 h-12 bg-rose-500 rounded-full flex items-center justify-center text-xl font-bold"; } else { icon.innerText = "✓"; icon.className = "w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center text-xl font-bold"; } toast.classList.remove('hidden'); setTimeout(() => { toast.classList.add('hidden'); }, 2000); }
 
+        // 🛠️ อัปเดต: ระบบบังคับเปิด "เลนส์กล้องหลักปกติ" (ห้ามเปิดเลนส์วาย)
         function startCamera() {
-            document.getElementById('scan-status').innerText = "⏳ กำลังเข้าถึงเลนส์กล้องหลัง..."; isProcessing = false; if (html5Qrcode) { html5Qrcode.clear(); } html5Qrcode = new Html5Qrcode("reader", { verbose: false });
+            document.getElementById('scan-status').innerText = "⏳ กำลังคัดเลือกเลนส์กล้องหลัก..."; 
+            isProcessing = false; 
+            if (html5Qrcode) { try { html5Qrcode.clear(); } catch(e) {} } 
+            
+            html5Qrcode = new Html5Qrcode("reader", false);
+            const legacyConfig = { fps: 15, qrbox: { width: 250, height: 130 } };
+
+            // 1. ค้นหารายชื่อกล้องทั้งหมดที่มีอยู่ในมือถือเครื่องนี้
+            Html5Qrcode.getCameras().then(cameras => {
+                if (cameras && cameras.length > 0) {
+                    let targetCameraId = null;
+
+                    // 2. ค้นหากล้องหลักที่คำอธิบายไม่มีคำว่า "wide", "ultra", "0.5x" หรือ "tele" 
+                    // ส่วนใหญ่กล้องหลักตัวแรกสุดจะมีชื่อคำว่า "back 0" หรือ "camera 0"
+                    // ลูปคัดเลือกกล้องหลังตัวหลักที่มีระยะโฟกัสปกติ
+                    for (let i = 0; i < cameras.length; i++) {
+                        const label = cameras[i].label.toLowerCase();
+                        if (label.includes("back") || label.includes("rear") || label.includes("0")) {
+                            if (!label.includes("ultra") && !label.includes("wide") && !label.includes("zoom")) {
+                                targetCameraId = cameras[i].id;
+                                break;
+                            }
+                        }
+                    }
+
+                    // หากลูปกรองแล้วไม่เจอคำเฉพาะ ให้เลือกกล้องตัวแรกสุดของเครื่อง (ซึ่งมักเป็นกล้องหลัก)
+                    if (!targetCameraId) {
+                        targetCameraId = cameras[0].id;
+                    }
+
+                    // 3. สั่งรันกล้องเจาะจงด้วย ID เลนส์ปกติที่เลือกมาได้
+                    html5Qrcode.start(
+                        targetCameraId, 
+                        legacyConfig, 
+                        onScanSuccess, 
+                        onScanError
+                    )
+                    .then(() => { 
+                        isCameraOpen = true; 
+                        document.getElementById('laser-line').classList.remove('hidden'); 
+                        document.getElementById('cameraToggleBtn').innerText = "🟢 เปิดอยู่ (เลนส์ปกติ)"; 
+                        document.getElementById('cameraToggleBtn').className = "bg-emerald-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm"; 
+                        document.getElementById('scan-status').innerText = "🎯 เล็งบาร์โค้ดสินค้าให้อยู่ในกรอบเลนส์หลัก"; 
+                    })
+                    .catch(err => {
+                        // แผนสำรองหากสั่งเปิดด้วย ID แล้วระบบ iOS/Android บล็อก ให้ถอยกลับไปใช้ระบบสากลแทน
+                        runFallbackCamera(legacyConfig);
+                    });
+
+                } else {
+                    runFallbackCamera(legacyConfig);
+                }
+            }).catch(err => {
+                runFallbackCamera(legacyConfig);
+            });
+        }
+
+        // ฟังก์ชันเปิดโหมดสากลสำรอง (กรณีระบบเช็ก ID กล้องไม่ได้)
+        function runFallbackCamera(config) {
+            html5Qrcode.start({ facingMode: "environment" }, config, onScanSuccess, onScanError)
+            .then(() => { 
+                isCameraOpen = true; 
+                document.getElementById('laser-line').classList.remove('hidden'); 
+                document.getElementById('cameraToggleBtn').innerText = "🟢 เปิดอยู่ (โหมดมาตรฐาน)"; 
+                document.getElementById('cameraToggleBtn').className = "bg-yellow-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm"; 
+            })
+            .catch(() => {
+                document.getElementById('scan-status').innerHTML = "❌ ไม่สามารถเปิดกล้องได้";
+            });
+        }
             
             // 🔥 ฝังระบบสแกนความเร็วสูงสำเร็จ!: ล็อกเป้าค้นหาเฉพาะรูปแบบบาร์โค้ดสากลของสินค้าปลีก (EAN-13, EAN-8, Code-128)
             const ultraFastConfig = { 
