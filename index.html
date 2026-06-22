@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Premium POS Mobile - Fixed Unpaid Status</title>
+    <title>Premium POS Mobile - Clear Customer Debt</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
@@ -141,36 +141,38 @@
             }); 
         }
 
-        // รายชื่อลูกค้าค้างจ่ายเงิน (อัปเดตระบบดึงแบบ Realtime ไร้ Cache บิดเบือน)
+        // 🚨 รายชื่อลูกค้าค้างจ่ายเงิน (อัปเดตระบบ One-Click Clear ทั้งชื่อยกกล่อง)
         function openUnpaidModal() { 
             showModal("🚨 รายชื่อลูกค้าค้างจ่ายเงิน", "<p class='text-center py-4 text-slate-400 animate-pulse'>⏳ กำลังประมวลผลบิลคงค้าง...</p>"); 
-            // เติมคำสั่ง &_t=${Date.now()} ต่อท้าย URL เพื่อบังคับให้เซิร์ฟเวอร์ดึงข้อมูลสดๆ จาก Google Sheet เสมอ
             fetch(`${WEB_APP_URL}?action=getHistory&_t=${Date.now()}`).then(r=>r.json()).then(data => {
                 const unpaid = data.filter(i => i.payment === "ยังไม่ได้ชำระเงิน"); 
                 const debts = {}; unpaid.forEach(i => { if(!debts[i.customer]) debts[i.customer] = {total:0, list:[]}; debts[i.customer].total += i.total; debts[i.customer].list.push(i); }); 
                 
                 let html = ""; 
+                let customerIndex = 0;
                 for(const c in debts) { 
+                    customerIndex++;
+                    // ใส่ id ให้กับกล่องของลูกค้ารายนั้น เพื่อให้สั่งลบออกจากจอได้ง่ายๆ
                     html += `
-                        <div class="bg-rose-50/70 border border-rose-100 p-3 rounded-xl mb-2">
-                            <div class="flex justify-between items-center border-b border-rose-100 pb-1.5 text-xs font-bold text-rose-900">
-                                <span>👤 คุณ ${c}</span>
-                                <span class="bg-white border border-rose-200 px-2 py-0.5 rounded-md text-rose-600 font-black">ค้าง: ${debts[c].total.toFixed(2)} ฿</span>
+                        <div id="debt-box-${customerIndex}" class="bg-rose-50/70 border border-rose-100 p-3 rounded-xl mb-3 transition-all duration-300">
+                            <div class="flex justify-between items-center border-b border-rose-100 pb-2 text-xs font-bold text-rose-900">
+                                <div class="flex flex-col">
+                                    <span>👤 คุณ ${c}</span>
+                                    <span class="text-[10px] text-rose-500 font-normal">ยอดรวมค้าง: ${debts[c].total.toFixed(2)} ฿</span>
+                                </div>
+                                <button onclick="clearAllCustomerDebt('${c}', ${customerIndex})" 
+                                    class="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-sm active:scale-95 transition">
+                                    💸 จ่ายเงินครบแล้ว
+                                </button>
                             </div>
-                            <div class="text-[11px] text-slate-500 pt-2 space-y-2">
+                            <div class="text-[10px] text-slate-500 pt-2 space-y-1">
                     `; 
                     
                     debts[c].list.forEach(i => { 
                         html += `
-                            <div id="unpaid-row-${i.rowId}" class="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm transition-all duration-300">
-                                <div>
-                                    <span class="font-bold text-slate-700">${i.name}</span>
-                                    <div class="text-[9px] text-slate-400">${i.date} (${i.time}) - ยอด: ${i.total} ฿</div>
-                                </div>
-                                <button onclick="markAsPaid(${i.rowId})" 
-                                    class="bg-emerald-500 text-white text-[10px] font-bold px-3 py-1 rounded-md shadow-sm active:scale-95 transition">
-                                    💸 จ่ายแล้ว
-                                </button>
+                            <div class="flex justify-between items-center bg-white/60 p-1.5 rounded border border-slate-100">
+                                <span>• ${i.name} (x${i.quantity})</span>
+                                <span class="font-mono font-bold">${i.total.toFixed(2)} ฿</span>
                             </div>
                         `; 
                     }); 
@@ -180,22 +182,28 @@
             }); 
         }
 
-        // แก้ปัญหาล้มเหลว และอัปเดตหน้าจอทันทีแบบวันคลิก (Optimistic UI Update)
-        function markAsPaid(rowId) {
-            // จุดที่ 1: สั่งลบแถวสินค้านั้นๆ ออกจากหน้าจอมือถือทันที โดยไม่ต้องรอให้เครือข่ายตอบกลับเพื่อความลื่นไหล
-            const targetElement = document.getElementById(`unpaid-row-${rowId}`);
-            if (targetElement) {
-                targetElement.style.opacity = '0';
-                targetElement.style.transform = 'scale(0.9)';
-                setTimeout(() => { targetElement.remove(); }, 300);
+        // 🔥 ฟังก์ชันใหม่: สั่งลบชื่อและบิลทั้งหมดของลูกค้ารายนั้นออกจาก Google Sheets และหน้าจอมือถือทันที
+        function clearAllCustomerDebt(customerName, boxIndex) {
+            // 1. สั่งอนิเมชันให้กล่องชื่อของลูกค้ารายนั้นหายไปจากหน้าจอมือถือทันทีในเสี้ยววินาที
+            const targetBox = document.getElementById(`debt-box-${boxIndex}`);
+            if (targetBox) {
+                targetBox.style.opacity = '0';
+                targetBox.style.transform = 'scale(0.9)';
+                setTimeout(() => { 
+                    targetBox.remove(); 
+                    // ตรวจสอบว่าถ้าหน้าจอไม่มีกล่องค้างชำระเหลืออยู่เลย ให้ขึ้นข้อความยินดี
+                    if(document.querySelectorAll('[id^="debt-box-"]').length === 0) {
+                        document.getElementById('modalContent').innerHTML = "🎉 ไม่พบรายชื่อคนค้างชำระเงิน";
+                    }
+                }, 300);
             }
 
-            showSuccessToast("💸 เคลียร์สถานะเรียบร้อย!");
+            showSuccessToast(`💸 เคลียร์หนี้ คุณ ${customerName} สำเร็จ!`);
 
-            // จุดที่ 2: ทำงานส่งข้อมูลไปสั่งเปลี่ยนสถานะใน Google Sheet เบื้องหลังอย่างรวดเร็ว
+            // 2. ส่งคำสั่งไปล้างหนี้ของชื่อคนนี้ทั้งหมดใน Google Sheet เบื้องหลัง (ใช้ x-www-form-urlencoded แก้ CORS ล้มเหลว)
             const formDetails = new URLSearchParams();
-            formDetails.append('action', 'updatePayment');
-            formDetails.append('rowId', rowId);
+            formDetails.append('action', 'clearCustomerDebt');
+            formDetails.append('customerName', customerName);
 
             fetch(WEB_APP_URL, {
                 method: 'POST',
@@ -204,17 +212,10 @@
                 mode: 'no-cors'
             })
             .then(() => {
-                // ตัวล็อกสำรอง: ดึงรายการค้างชำระใหม่แบบ Realtime ไร้แคชตกค้าง เพื่อจัดระเบียบหน้าจอหลังจากผ่านไป 1.5 วินาที
-                setTimeout(() => { 
-                    fetch(`${WEB_APP_URL}?action=getHistory&_t=${Date.now()}`).then(r=>r.json()).then(data => {
-                        const unpaidCheck = data.filter(i => i.payment === "ยังไม่ได้ชำระเงิน");
-                        if(unpaidCheck.length === 0) {
-                            document.getElementById('modalContent').innerHTML = "🎉 ไม่พบรายชื่อคนค้างชำระเงิน";
-                        }
-                    });
-                }, 1500);
+                // บังคับรีเฟรชประวัติเบื้องหลังแบบไร้ Cache ป้องกันข้อมูลเก่าโผล่ซ้ำเมื่อกดเปิดดูครั้งต่อไป
+                setTimeout(() => { fetch(`${WEB_APP_URL}?action=getHistory&_t=${Date.now()}`); }, 1000);
             })
-            .catch(err => console.log("Background network sync log:", err));
+            .catch(err => console.log("Network sync error log:", err));
         }
 
         function showModal(title, text) { document.getElementById('reportModal').classList.remove('hidden'); document.getElementById('modalTitle').innerText = title; document.getElementById('modalContent').innerHTML = text; }
