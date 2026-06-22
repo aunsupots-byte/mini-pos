@@ -3,25 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Premium POS Mobile - Absolute Black Screen Fix</title>
+    <title>Premium POS Mobile - Expanded Scan & Zoom</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" type="text/javascript"></script>
     <style>
         body { font-family: 'Sarabun', sans-serif; }
         #reader button, #reader img { display: none !important; }
-        #reader { border: none !important; width: 100% !important; height: 100% !important; }
-        
-        /* 🔥 ทีเด็ดแก้จอดำ + แก้เลนส์วาย: บังคับซูมภาพวิดีโอด้วย CSS แทนการสั่งผ่านฮาร์ดแวร์ */
-        #reader video { 
-            width: 135% !important; 
-            height: 135% !important; 
-            object-fit: cover !important; 
-            transform: scale(1.35) !important; /* ขยายภาพเพื่อตัดขอบเลนส์วายทิ้ง */
-            image-rendering: -webkit-optimize-contrast !important;
-        }
+        #reader { border: none !important; }
+        /* สไตล์ล็อกเฟรมวิดีโอให้ขยายสัดส่วนเต็มบล็อก ไม่ยอมให้เบลอ */
+        #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; image-rendering: -webkit-optimize-contrast !important; image-rendering: crisp-edges !important; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen pb-24 text-slate-800" onclick="unlockAudio()">
@@ -42,15 +35,12 @@
     <div class="max-w-md mx-auto p-4 space-y-4">
         <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
             <div class="flex justify-between items-center mb-3">
-                <div class="flex flex-col">
-                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">เครื่องสแกนบาร์โค้ดสากล</span>
-                    <span class="text-[10px] text-emerald-500 font-bold">● โหมดเลนส์ปกติ 1x (เสถียรสูงสุด)</span>
-                </div>
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">เครื่องสแกนบาร์โค้ดดั้งเดิม</span>
                 <button id="cameraToggleBtn" onclick="toggleCamera()" class="bg-rose-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm transition-all duration-200">🔴 กล้องปิดอยู่ (คลิกเปิด)</button>
             </div>
             <div class="relative w-full bg-slate-900 rounded-xl overflow-hidden aspect-[4/3] border border-slate-200 shadow-inner flex items-center justify-center">
                 <div id="reader" class="w-full h-full"></div>
-                <div id="laser-line" class="hidden absolute left-0 right-0 h-0.5 bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,1)] animate-pulse z-10"></div>
+                <div id="laser-line" class="hidden absolute left-0 right-0 h-0.5 bg-rose-500/90 shadow-[0_0_8px_rgba(244,63,94,1)] animate-pulse"></div>
             </div>
             <div id="scan-status" class="text-center text-xs font-medium text-slate-400 mt-2.5">💡 แนะนำให้กดปุ่มเปิดกล้องเพื่อเริ่มใช้งาน</div>
         </div>
@@ -122,9 +112,9 @@
         function playBeepSound() { try { unlockAudio(); if (!audioCtx) return; const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type = 'sine'; osc.frequency.setValueAtTime(1000, audioCtx.currentTime); gain.gain.setValueAtTime(0.4, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08); osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.08); } catch(e) { console.log(e); } }
         function showSuccessToast(message, isError = false) { const toast = document.getElementById('successToast'); const icon = document.getElementById('toastIcon'); document.getElementById('toastMessage').innerText = message; if(isError) { icon.innerText = "❌"; icon.className = "w-12 h-12 bg-rose-500 rounded-full flex items-center justify-center text-xl font-bold"; } else { icon.innerText = "✓"; icon.className = "w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center text-xl font-bold"; } toast.classList.remove('hidden'); setTimeout(() => { toast.classList.add('hidden'); }, 2000); }
 
-        // 🛠️ โค้ดชุดเซฟตี้สูงสุด: รันโหมดดั้งเดิมที่ไม่มีวันจอดำ และปล่อยให้ CSS ซูมระยะ 1x ให้เองอัตโนมัติ
+        // 🛠️ อัปเดตฟังก์ชันเปิดกล้อง: ขยายช่องสแกน และสั่งซูมดิจิทัลระยะ 1.5x เพื่อแก้ปัญหาภาพบาร์โค้ดเล็ก
         function startCamera() {
-            document.getElementById('scan-status').innerText = "⏳ กำลังเชื่อมต่อฮาร์ดแวร์กล้อง..."; isProcessing = false; 
+            document.getElementById('scan-status').innerText = "⏳ กำลังเข้าถึงเลนส์กล้องหลังหลัก..."; isProcessing = false; 
             if (html5Qrcode) { try { html5Qrcode.clear(); } catch(e) {} } 
             
             html5Qrcode = new Html5Qrcode("reader", false);
@@ -132,9 +122,10 @@
             // ตั้งค่าเร่งความเร็วการสแกนและระบุชนิดบาร์โค้ดสินค้าสากล
             const ultraFastConfig = { 
                 fps: 15, 
+                // 🛠️ แก้ไข (จุดที่ 1): ขยายขนาดกรอบสแกนบาร์โค้ดให้ใหญ่ขึ้นเต็มแผ่น
                 qrbox: function(width, height) { 
-                    // ปรับกรอบสแกนให้พอดีกับระยะซูม CSS
-                    return { width: Math.min(width * 0.75, 250), height: Math.min(height * 0.35, 110) }; 
+                    // ขยายเป็น 85% ของความกว้างหน้าจอเพื่อให้ยิงบาร์โค้ดอันใหญ่ได้ และบีบความสูงให้จับเฉพาะเส้นรหัส
+                    return { width: Math.min(width * 0.85, 300), height: Math.min(height * 0.35, 120) }; 
                 },
                 formatsToSupport: [ 
                     Html5QrcodeSupportedFormats.EAN_13, 
@@ -143,37 +134,70 @@
                 ]
             };
 
-            // เรียกใช้คำสั่งพื้นฐานที่สุดที่การันตีว่าเปิดติดทุกเครื่อง ไม่ติดบล็อกความปลอดภัย
-            html5Qrcode.start({ facingMode: "environment" }, ultraFastConfig, onScanSuccess, onScanError)
-            .then(() => { 
-                isCameraOpen = true; 
-                document.getElementById('laser-line').classList.remove('hidden'); 
-                document.getElementById('cameraToggleBtn').innerText = "🟢 เปิดอยู่ (ระยะซูม 1.35x)"; 
-                document.getElementById('cameraToggleBtn').className = "bg-emerald-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm"; 
-                document.getElementById('scan-status').innerText = "🎯 เล็งบาร์โค้ดสินค้าให้อยู่ในกรอบเลนส์หลัก (เปิดติดชัวร์)"; 
-            })
-            .catch(err => { 
-                // แผนสำรองสุดท้ายกรณีเครื่องปฏิเสธคำสั่งดึงกล้องหลังโดยตรง
-                html5Qrcode.start({ facingMode: { any: true } }, ultraFastConfig, onScanSuccess, onScanError)
-                .then(() => { 
-                    isCameraOpen = true; 
-                    document.getElementById('laser-line').classList.remove('hidden'); 
-                    document.getElementById('cameraToggleBtn').innerText = "🟢 เปิดอยู่ (โหมดสำรอง)"; 
-                    document.getElementById('cameraToggleBtn').className = "bg-yellow-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm"; 
-                })
-                .catch(() => { document.getElementById('scan-status').innerHTML = "❌ เปิดกล้องไม่ได้ กรุณาเปิดลิงก์บน Safari/Chrome เท่านั้น"; });
-            });
+            // ดึงรายชื่อกล้องทั้งหมดเพื่อหาเลนส์ตัวปกติ 1x
+            Html5Qrcode.getCameras().then(cameras => {
+                if (cameras && cameras.length > 0) {
+                    let targetCameraId = null;
+
+                    // สแกนคัดชื่อเลนส์ที่ไม่ใช่เลนส์วาย/มุมกว้างพิเศษ
+                    for (let i = 0; i < cameras.length; i++) {
+                        const label = cameras[i].label.toLowerCase();
+                        if (label.includes("back") || label.includes("rear") || label.includes("0")) {
+                            if (!label.includes("ultra") && !label.includes("wide") && !label.includes("zoom")) {
+                                targetCameraId = cameras[i].id;
+                                break;
+                            }
+                        }
+                    }
+
+                    // ถ้าหาตามเงื่อนไขไม่เจอ ให้ใช้ตัวแรกสุดมาตรฐาน
+                    if (!targetCameraId) { targetCameraId = cameras[0].id; }
+
+                    // สั่งรันกล้องด้วย ID เลนส์หลักที่ตรวจจับได้
+                    html5Qrcode.start(targetCameraId, ultraFastConfig, onScanSuccess, () => {})
+                    .then(() => { 
+                        isCameraOpen = true; 
+                        document.getElementById('laser-line').classList.remove('hidden'); 
+                        document.getElementById('cameraToggleBtn').innerText = "🟢 เปิดอยู่ (เลนส์หลัก)"; 
+                        document.getElementById('cameraToggleBtn').className = "bg-emerald-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm"; 
+                        document.getElementById('scan-status').innerText = "🎯 เล็งยิงบาร์โค้ดได้เลย บาร์โค้ดจะอันใหญ่ขึ้น"; 
+
+                        // 🛠️ แก้ไข (จุดที่ 2): ระบบซูมดิจิทัลบีบภาพเข้ามาใกล้ขึ้น 1.5 เท่า
+                        // ระบบจะล็อกและดัน Digital Zoom ทันทีใน 0.7 วินาทีหลังเปิดกล้อง เพื่อสลัดภาพมุมกว้าง
+                        setTimeout(() => {
+                            try {
+                                const videoTrack = html5Qrcode.getRunningTrack();
+                                const capabilities = videoTrack.getCapabilities();
+                                if (capabilities.zoom) {
+                                    // ดันดิจิทัลซูมบีบพื้นที่ภาพ บาร์โค้ดจะใหญ่และตัวเลขอ่านง่ายมาก
+                                    videoTrack.applyConstraints({
+                                        advanced: [{ zoom: Math.min(1.5, capabilities.zoom.max), focusMode: "continuous" }]
+                                    });
+                                }
+                            } catch(e) { console.log("ซูมดิจิทัลไม่ทำงานบนฮาร์ดแวร์เบราว์เซอร์นี้"); }
+                        }, 700);
+                    })
+                    .catch(() => { runFallbackCamera(ultraFastConfig); });
+                } else {
+                    runFallbackCamera(ultraFastConfig);
+                }
+            }).catch(() => { runFallbackCamera(ultraFastConfig); });
+        }
+
+        // โหมดสากลสำรอง (กรณีเบราว์เซอร์ไม่ปล่อยข้อมูล ID กล้อง)
+        function runFallbackCamera(config) {
+            html5Qrcode.start({ facingMode: "environment" }, config, onScanSuccess, () => {})
+            .then(() => { isCameraOpen = true; document.getElementById('laser-line').classList.remove('hidden'); document.getElementById('cameraToggleBtn').innerText = "🟢 เปิดอยู่ (โหมดมาตรฐาน)"; document.getElementById('cameraToggleBtn').className = "bg-yellow-500 text-white text-xs font-bold px-4 py-1.5 rounded-xl transition active:scale-95"; })
+            .catch(() => { document.getElementById('scan-status').innerHTML = "❌ เปิดกล้องไม่สำเร็จ"; });
         }
         
         function stopCamera() { if (html5Qrcode && isCameraOpen) { html5Qrcode.stop().then(() => { isCameraOpen = false; document.getElementById('laser-line').classList.add('hidden'); document.getElementById('reader').innerHTML = ""; document.getElementById('cameraToggleBtn').innerText = "🔴 ปิดอยู่ (คลิกเปิด)"; document.getElementById('cameraToggleBtn').className = "bg-rose-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm"; document.getElementById('scan-status').innerText = "💡 พร้อมเปิดกล้องใหม่อีกครั้ง"; }); } }
         function toggleCamera() { isCameraOpen ? stopCamera() : startCamera(); }
         function onScanSuccess(decodedText) { if (isProcessing) return; isProcessing = true; playBeepSound(); if (navigator.vibrate) navigator.vibrate([80, 40, 80]); document.getElementById('barcode').value = decodedText; fetchProductData(decodedText); setTimeout(() => { stopCamera(); showSuccessToast("จับรหัสสินค้าสำเร็จ!"); }, 300); }
-        function onScanError(err) { /* ข้ามเฟรมภาพเปล่า */ }
 
-        // ระบบจัดการฟอร์มคลังสินค้าและประวัติ
         function fetchProductData(bc) { if(!bc) return; document.getElementById('productName').value = "⏳ กำลังสืบค้นจาก Google Sheet..."; fetch(`${WEB_APP_URL}?barcode=${bc}&_t=${Date.now()}`).then(r=>r.json()).then(d=>{ if(d.found){ document.getElementById('productName').value = d.name; document.getElementById('price').value = d.price; } else { document.getElementById('productName').value = "คลังแผ่นงานไม่มีรหัสนี้ (พิมพ์ตั้งชื่อสินค้าเองได้)"; } }); }
         function addToCart() { const b = document.getElementById('barcode').value, n = document.getElementById('productName').value, p = parseFloat(document.getElementById('price').value), q = parseInt(document.getElementById('quantity').value); if(!b || !n || isNaN(p) || q <= 0) { showSuccessToast("กรอกข้อมูลไม่ครบถ้วน!", true); return; } cart.push({barcode:b, name:n, price:p, quantity:q}); updateCartUI(); document.getElementById('barcode').value=""; document.getElementById('productName').value=""; document.getElementById('price').value=""; showSuccessToast("เพิ่มเข้าตะกร้าแล้ว"); }
-        function updateCartUI() { const list = document.getElementById('cart-list'); let html = "", total = 0; cart.forEach((item, i) => { total += (item.price * item.quantity); html += `<div class="flex justify-between items-center py-2 text-slate-700 font-medium"><div class="truncate"><div class="font-bold">${item.name}</div><div class="text-[11px] text-slate-400 font-mono">รหัส: ${item.barcode} | ${item.price} ฿ × ${item.quantity}</div></div><span class="font-bold text-slate-800">${(item.price * item.quantity).toFixed(2)} ฿</span></div>`; }); list.innerHTML = cart.length ? html : "<p class='text-slate-400 text-center py-4 text-xs'>ไม่มีสินค้าในตะกร้า</p>"; document.getElementById('grand-total').innerText = total.toFixed(2) + " ฿"; document.getElementById('checkoutBtn').disabled = !cart.length; document.getElementById('checkoutBtnBtn').className = cart.length ? "w-full bg-indigo-600 text-white font-bold py-4 rounded-xl text-base shadow-md active:scale-95 transition-all duration-150 cursor-pointer" : "w-full bg-slate-300 text-slate-500 font-bold py-4 rounded-xl text-base shadow-sm cursor-not-allowed"; }
+        function updateCartUI() { const list = document.getElementById('cart-list'); let html = "", total = 0; cart.forEach((item, i) => { total += (item.price * item.quantity); html += `<div class="flex justify-between items-center py-2 text-slate-700 font-medium"><div class="truncate"><div class="font-bold">${item.name}</div><div class="text-[11px] text-slate-400 font-mono">รหัส: ${item.barcode} | ${item.price} ฿ × ${item.quantity}</div></div><span class="font-bold text-slate-800">${(item.price * item.quantity).toFixed(2)} ฿</span></div>`; }); list.innerHTML = cart.length ? html : "<p class='text-slate-400 text-center py-4 text-xs'>ไม่มีสินค้าในตะกร้า</p>"; document.getElementById('grand-total').innerText = total.toFixed(2) + " ฿"; document.getElementById('checkoutBtn').disabled = !cart.length; document.getElementById('checkoutBtn').className = cart.length ? "w-full bg-indigo-600 text-white font-bold py-4 rounded-xl text-base shadow-md active:scale-95 transition-all duration-150 cursor-pointer" : "w-full bg-slate-300 text-slate-500 font-bold py-4 rounded-xl text-base shadow-sm cursor-not-allowed"; }
         function clearCart() { cart = []; updateCartUI(); }
         function submitOrder() { if(!cart.length) return; const cust = document.getElementById('customerName').value.trim(); const pay = document.getElementById('payment').value; if(pay === "ยังไม่ได้ชำระเงิน" && cust === "ทั่วไป") { showSuccessToast("กรุณาใส่ชื่อคนค้างจ่าย!", true); return; } document.getElementById('checkoutBtn').disabled = true; document.getElementById('checkoutBtn').innerText = "⏳ กำลังบันทึกธุรกรรม..."; fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ payment: pay, customer: cust, items: cart }) }).then(() => { showSuccessToast("🎉 บันทึกเข้า Google Sheet สำเร็จ!"); clearCart(); document.getElementById('customerName').value = "ทั่วไป"; }).finally(() => { document.getElementById('checkoutBtn').innerText = "🚀 ยืนยันการขาย (บันทึกข้อมูล)"; updateCartUI(); }); }
         
