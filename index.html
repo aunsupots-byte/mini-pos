@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Premium POS Mobile - Universal Camera Fix</title>
+    <title>Premium POS Mobile - เคลียร์บิลค้างชำระ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
@@ -13,7 +13,6 @@
         body { font-family: 'Sarabun', sans-serif; }
         #reader button, #reader img { display: none !important; }
         #reader { border: none !important; }
-        /* สไตล์ป้องกันวิดีโอล้นกรอบบน iOS */
         #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
     </style>
 </head>
@@ -33,15 +32,11 @@
     </div>
 
     <div class="max-w-md mx-auto p-4 space-y-4">
-        
         <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
             <div class="flex justify-between items-center mb-3">
                 <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">เครื่องสแกนบาร์โค้ด</span>
-                <button id="cameraToggleBtn" onclick="toggleCamera()" class="bg-rose-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm transition-all duration-200">
-                    🔴 กล้องปิดอยู่ (คลิกเปิด)
-                </button>
+                <button id="cameraToggleBtn" onclick="toggleCamera()" class="bg-rose-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm transition-all duration-200">🔴 กล้องปิดอยู่ (คลิกเปิด)</button>
             </div>
-            
             <div class="relative w-full bg-slate-900 rounded-xl overflow-hidden aspect-[4/3] border border-slate-200 shadow-inner flex items-center justify-center">
                 <div id="reader" class="w-full h-full"></div>
                 <div id="laser-line" class="hidden absolute left-0 right-0 h-0.5 bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.8)]"></div>
@@ -73,9 +68,7 @@
                 <div class="w-1/3">
                     <input type="number" id="quantity" value="1" min="1" class="w-full p-3 border border-slate-200 rounded-xl text-center font-bold text-slate-700">
                 </div>
-                <button type="button" onclick="addToCart()" class="w-2/3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition transform active:scale-95">
-                    ➕ เพิ่มลงในบิล
-                </button>
+                <button type="button" onclick="addToCart()" class="w-2/3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition transform active:scale-95">➕ เพิ่มลงในบิล</button>
             </div>
         </div>
 
@@ -84,9 +77,7 @@
                 <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">🛒 รายการสินค้าในบิล</h3>
                 <button onclick="clearCart()" class="text-xs text-rose-500 hover:underline">ล้างทั้งหมด</button>
             </div>
-            <div id="cart-list" class="space-y-2 max-h-40 overflow-y-auto divide-y divide-slate-50 pr-1 text-sm">
-                <p class="text-slate-400 text-center py-4 text-xs">ไม่มีสินค้าในตะกร้า</p>
-            </div>
+            <div id="cart-list" class="space-y-2 max-h-40 overflow-y-auto divide-y divide-slate-50 pr-1 text-sm"><p class="text-slate-400 text-center py-4 text-xs">ไม่มีสินค้าในตะกร้า</p></div>
             <div class="bg-emerald-50/50 border border-emerald-100 p-3 rounded-xl flex justify-between items-center mt-2">
                 <span class="text-xs font-bold text-emerald-800">ยอดรวมทั้งสิ้น:</span>
                 <span id="grand-total" class="text-2xl font-black text-emerald-600">0.00 ฿</span>
@@ -99,14 +90,11 @@
                 <option value="เงินสด">💵 เงินสด</option>
                 <option value="ยังไม่ได้ชำระเงิน">🚨 ยังไม่ได้ชำระเงิน (ติดหนี้ไว้ก่อน)</option>
             </select>
-            <button type="button" id="checkoutBtn" onclick="submitOrder()" disabled 
-                class="w-full bg-slate-300 text-slate-500 font-bold py-4 rounded-xl text-base shadow-sm cursor-not-allowed transition-all duration-200">
-                🚀 ยืนยันการขาย (บันทึกข้อมูล)
-            </button>
+            <button type="button" id="checkoutBtn" onclick="submitOrder()" disabled class="w-full bg-slate-300 text-slate-500 font-bold py-4 rounded-xl text-base shadow-sm cursor-not-allowed transition-all duration-200">🚀 ยืนยันการขาย (บันทึกข้อมูล)</button>
         </div>
     </div>
 
-    <div id="reportModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end justify-center"><div class="bg-white w-full max-w-md rounded-t-3xl max-h-[85vh] flex flex-col shadow-2xl"><div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-3xl"><h2 id="modalTitle" class="font-bold text-sm text-slate-700">รายงาน</h2><button onclick="closeModal()" class="w-8 h-8 bg-slate-200 text-slate-500 rounded-full font-bold flex items-center justify-center">✕</button></div><div id="modalContent" class="p-4 overflow-y-auto flex-1 space-y-3 text-xs"></div></div></div>
+    <div id="reportModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end justify-center"><div class="bg-white w-full max-w-md rounded-t-3xl max-h-[85vh] flex flex-col shadow-2xl animate-slide-up"><div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-3xl"><h2 id="modalTitle" class="font-bold text-sm text-slate-700">รายงาน</h2><button onclick="closeModal()" class="w-8 h-8 bg-slate-200 text-slate-500 rounded-full font-bold flex items-center justify-center">✕</button></div><div id="modalContent" class="p-4 overflow-y-auto flex-1 space-y-3 text-xs"></div></div></div>
 
     <div id="successToast" class="hidden fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-slate-900/90 text-white px-6 py-5 rounded-2xl flex flex-col items-center justify-center space-y-2 z-50 shadow-2xl backdrop-blur-md max-w-[250px] text-center border border-white/10">
         <div id="toastIcon" class="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center text-xl font-bold">✓</div>
@@ -117,182 +105,29 @@
         // ⚠️ วาง URL ของ Google Apps Script ของคุณที่นี่ (ลงท้ายด้วย /exec)
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx92ov484ob-O4ncwwjpzhD2E5wgwmuhAguCRD8gBiVpyhCiyqLru0LTCqlnHjwHhtFvg/exec"; 
         
-        let cart = [];
-        let html5Qrcode = null;
-        let isCameraOpen = false;
-        let audioCtx = null;
-        let isProcessing = false;
+        let cart = []; let html5Qrcode = null; let isCameraOpen = false; let audioCtx = null; let isProcessing = false;
 
-        function unlockAudio() {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-        }
+        function unlockAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
+        function playBeepSound() { try { unlockAudio(); if (!audioCtx) return; const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type = 'sine'; osc.frequency.setValueAtTime(1000, audioCtx.currentTime); gain.gain.setValueAtTime(0.4, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08); osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.08); } catch(e) { console.log(e); } }
+        function showSuccessToast(message, isError = false) { const toast = document.getElementById('successToast'); const icon = document.getElementById('toastIcon'); document.getElementById('toastMessage').innerText = message; if(isError) { icon.innerText = "❌"; icon.className = "w-12 h-12 bg-rose-500 rounded-full flex items-center justify-center text-xl font-bold"; } else { icon.innerText = "✓"; icon.className = "w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center text-xl font-bold"; } toast.classList.remove('hidden'); setTimeout(() => { toast.classList.add('hidden'); }, 2000); }
 
-        function playBeepSound() {
-            try {
-                unlockAudio(); if (!audioCtx) return;
-                const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-                osc.connect(gain); gain.connect(audioCtx.destination);
-                osc.type = 'sine'; osc.frequency.setValueAtTime(1000, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
-                osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.08);
-            } catch(e) { console.log(e); }
-        }
-
-        function showSuccessToast(message, isError = false) {
-            const toast = document.getElementById('successToast');
-            const icon = document.getElementById('toastIcon');
-            document.getElementById('toastMessage').innerText = message;
-            
-            if(isError) {
-                icon.innerText = "❌"; icon.className = "w-12 h-12 bg-rose-500 rounded-full flex items-center justify-center text-xl font-bold";
-            } else {
-                icon.innerText = "✓"; icon.className = "w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center text-xl font-bold";
-            }
-            
-            toast.classList.remove('hidden');
-            setTimeout(() => { toast.classList.add('hidden'); }, 2000);
-        }
-
-        // 🛠️ อัปเดต: ระบบเปิดกล้องเวอร์ชันเปิดติดแน่นอน 100% (Universal Camera Code)
         function startCamera() {
-            document.getElementById('scan-status').innerText = "⏳ กำลังเข้าถึงกล้องหลัง...";
-            isProcessing = false;
-            
-            // ตรวจสอบและทำลายอินสแตนซ์เก่าก่อนเพื่อล้างสิทธิ์ล็อกฮาร์ดแวร์
-            if (html5Qrcode) { html5Qrcode.clear(); }
-            
-            html5Qrcode = new Html5Qrcode("reader", { verbose: false });
-
-            // ใช้การระบุโครงสร้างแบบยืดหยุ่นสูงสุด ไม่ล็อก Resolution ป้องกันภาพค้างใน iOS และ Android รุ่นใหม่
-            const cameraConfig = {
-                fps: 15,
-                qrbox: function(width, height) {
-                    // คำนวณกรอบสี่เหลี่ยมสำหรับยิงบาร์โค้ดแบบอัตโนมัติตามหน้าจอมือถือจริง
-                    return { width: Math.min(width * 0.8, 280), height: Math.min(height * 0.4, 140) };
-                }
-            };
-
-            // บังคับกล้องหลังผ่าน environment
-            html5Qrcode.start({ facingMode: "environment" }, cameraConfig, onScanSuccess, onScanError)
-            .then(() => {
-                isCameraOpen = true;
-                document.getElementById('laser-line').classList.remove('hidden');
-                document.getElementById('cameraToggleBtn').innerText = "🟢 เปิดอยู่ (คลิกปิด)";
-                document.getElementById('cameraToggleBtn').className = "bg-emerald-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm";
-                document.getElementById('scan-status').innerText = "🎯 เล็งบาร์โค้ดให้อยู่ในกรอบเลนส์";
-            })
-            .catch(err => {
-                // แผนสำรอง (Fallback): หากใช้วิธีระบุโหมดหันกล้องแล้วโดนบล็อก ให้ขอกล้องตัวแรกที่ระบบส่งมาให้แทน
-                console.log("พยายามขอกล้องหลังไม่สำเร็จ กำลังรันโหมดสำรอง...", err);
-                html5Qrcode.start({ facingMode: { any: true } }, cameraConfig, onScanSuccess, onScanError)
-                .then(() => {
-                    isCameraOpen = true;
-                    document.getElementById('laser-line').classList.remove('hidden');
-                    document.getElementById('cameraToggleBtn').innerText = "🟢 เปิดอยู่ (โหมดสำรอง)";
-                    document.getElementById('cameraToggleBtn').className = "bg-yellow-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm";
-                })
-                .catch(finalErr => {
-                    document.getElementById('scan-status').innerHTML = "❌ เปิดกล้องไม่สำเร็จ!<br><span class='text-rose-500 font-bold text-[11px]'>กรุณาแชร์ไปเปิดบน Safari/Chrome และกดยอมรับสิทธิ์การใช้กล้องของมือถือด้วยครับ</span>";
-                });
-            });
+            document.getElementById('scan-status').innerText = "⏳ กำลังเข้าถึงกล้องหลัง..."; isProcessing = false; if (html5Qrcode) { html5Qrcode.clear(); } html5Qrcode = new Html5Qrcode("reader", { verbose: false });
+            const cameraConfig = { fps: 15, qrbox: function(width, height) { return { width: Math.min(width * 0.8, 280), height: Math.min(height * 0.4, 140) }; } };
+            html5Qrcode.start({ facingMode: "environment" }, cameraConfig, onScanSuccess, () => {})
+            .then(() => { isCameraOpen = true; document.getElementById('laser-line').classList.remove('hidden'); document.getElementById('cameraToggleBtn').innerText = "🟢 เปิดอยู่ (คลิกปิด)"; document.getElementById('cameraToggleBtn').className = "bg-emerald-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm"; document.getElementById('scan-status').innerText = "🎯 เล็งบาร์โค้ดให้อยู่ในกรอบเลนส์"; })
+            .catch(err => { html5Qrcode.start({ facingMode: { any: true } }, cameraConfig, onScanSuccess, () => {}).then(() => { isCameraOpen = true; document.getElementById('laser-line').classList.remove('hidden'); document.getElementById('cameraToggleBtn').innerText = "🟢 เปิดอยู่ (โหมดสำรอง)"; document.getElementById('cameraToggleBtn').className = "bg-yellow-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm"; }).catch(() => { document.getElementById('scan-status').innerHTML = "❌ เปิดกล้องไม่สำเร็จ"; }); });
         }
-
-        function stopCamera() {
-            if (html5Qrcode && isCameraOpen) {
-                html5Qrcode.stop().then(() => {
-                    isCameraOpen = false;
-                    document.getElementById('laser-line').classList.add('hidden');
-                    document.getElementById('reader').innerHTML = "";
-                    document.getElementById('cameraToggleBtn').innerText = "🔴 ปิดอยู่ (คลิกเปิด)";
-                    document.getElementById('cameraToggleBtn').className = "bg-rose-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm";
-                    document.getElementById('scan-status').innerText = "💡 พร้อมเปิดกล้องใหม่อีกครั้ง";
-                }).catch(e => console.log("Stop error:", e));
-            }
-        }
-
+        function stopCamera() { if (html5Qrcode && isCameraOpen) { html5Qrcode.stop().then(() => { isCameraOpen = false; document.getElementById('laser-line').classList.add('hidden'); document.getElementById('reader').innerHTML = ""; document.getElementById('cameraToggleBtn').innerText = "🔴 ปิดอยู่ (คลิกเปิด)"; document.getElementById('cameraToggleBtn').className = "bg-rose-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm"; document.getElementById('scan-status').innerText = "💡 พร้อมเปิดกล้องใหม่อีกครั้ง"; }); } }
         function toggleCamera() { isCameraOpen ? stopCamera() : startCamera(); }
+        function onScanSuccess(decodedText) { if (isProcessing) return; isProcessing = true; playBeepSound(); if (navigator.vibrate) navigator.vibrate([80, 40, 80]); document.getElementById('barcode').value = decodedText; fetchProductData(decodedText); setTimeout(() => { stopCamera(); showSuccessToast("จับรหัสสินค้าสำเร็จ!"); }, 300); }
 
-        function onScanSuccess(decodedText) { 
-            if (isProcessing) return;
-            isProcessing = true;
-
-            playBeepSound();
-            if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
-            
-            document.getElementById('barcode').value = decodedText; 
-            fetchProductData(decodedText); 
-
-            // หน่วงเวลาเซฟตี้ 300ms เพื่อให้สตรีมสัญญาณวิดีโอยุติลงอย่างปลอดภัยในเบราว์เซอร์มือถือ
-            setTimeout(() => {
-                stopCamera();
-                showSuccessToast("จับรหัสสินค้าสำเร็จ!");
-            }, 300);
-        }
-
-        function onScanError(err) { /* ปล่อยข้ามเฟรมภาพขณะค้นหารหัส */ }
-
-        // ระบบจัดการบิลและบันทึกข้อมูลเข้า Google Sheets
-        function fetchProductData(bc) { 
-            if(!bc) return; 
-            document.getElementById('productName').value = "⏳ กำลังสืบค้นจาก Google Sheet..."; 
-            fetch(`${WEB_APP_URL}?barcode=${bc}`).then(r=>r.json()).then(d=>{ 
-                if(d.found){ 
-                    document.getElementById('productName').value = d.name; 
-                    document.getElementById('price').value = d.price; 
-                } else { 
-                    document.getElementById('productName').value = "คลังแผ่นงานไม่มีรหัสนี้ (พิมพ์ตั้งชื่อสินค้าเองได้)"; 
-                } 
-            }).catch(() => { document.getElementById('productName').value = "เชื่อมต่อฐานข้อมูลล้มเหลว"; });
-        }
-
-        function addToCart() { 
-            const b = document.getElementById('barcode').value, n = document.getElementById('productName').value, p = parseFloat(document.getElementById('price').value), q = parseInt(document.getElementById('quantity').value); 
-            if(!b || !n || isNaN(p) || q <= 0) { showSuccessToast("กรอกข้อมูลไม่ครบถ้วน!", true); return; } 
-            cart.push({barcode:b, name:n, price:p, quantity:q}); 
-            updateCartUI(); 
-            document.getElementById('barcode').value=""; document.getElementById('productName').value=""; document.getElementById('price').value=""; 
-            showSuccessToast("เพิ่มเข้าตะกร้าแล้ว");
-        }
-
-        function updateCartUI() { 
-            const list = document.getElementById('cart-list'); let html = "", total = 0; 
-            cart.forEach((item, i) => { 
-                total += (item.price * item.quantity); 
-                html += `<div class="flex justify-between items-center py-2 text-slate-700 font-medium"><div class="truncate"><div class="font-bold">${item.name}</div><div class="text-[11px] text-slate-400 font-mono">รหัส: ${item.barcode} | ${item.price} ฿ × ${item.quantity}</div></div><span class="font-bold text-slate-800">${(item.price * item.quantity).toFixed(2)} ฿</span></div>`; 
-            }); 
-            list.innerHTML = cart.length ? html : "<p class='text-slate-400 text-center py-4 text-xs'>ไม่มีสินค้าในตะกร้า</p>"; 
-            document.getElementById('grand-total').innerText = total.toFixed(2) + " ฿"; 
-            document.getElementById('checkoutBtn').disabled = !cart.length; 
-            document.getElementById('checkoutBtn').className = cart.length ? "w-full bg-indigo-600 text-white font-bold py-4 rounded-xl text-base shadow-md active:scale-95 transition-all duration-150 cursor-pointer" : "w-full bg-slate-300 text-slate-500 font-bold py-4 rounded-xl text-base shadow-sm cursor-not-allowed"; 
-        }
-
+        function fetchProductData(bc) { if(!bc) return; document.getElementById('productName').value = "⏳ กำลังสืบค้นจาก Google Sheet..."; fetch(`${WEB_APP_URL}?barcode=${bc}`).then(r=>r.json()).then(d=>{ if(d.found){ document.getElementById('productName').value = d.name; document.getElementById('price').value = d.price; } else { document.getElementById('productName').value = "คลังแผ่นงานไม่มีรหัสนี้ (พิมพ์ตั้งชื่อสินค้าเองได้)"; } }); }
+        function addToCart() { const b = document.getElementById('barcode').value, n = document.getElementById('productName').value, p = parseFloat(document.getElementById('price').value), q = parseInt(document.getElementById('quantity').value); if(!b || !n || isNaN(p) || q <= 0) { showSuccessToast("กรอกข้อมูลไม่ครบถ้วน!", true); return; } cart.push({barcode:b, name:n, price:p, quantity:q}); updateCartUI(); document.getElementById('barcode').value=""; document.getElementById('productName').value=""; document.getElementById('price').value=""; showSuccessToast("เพิ่มเข้าตะกร้าแล้ว"); }
+        function updateCartUI() { const list = document.getElementById('cart-list'); let html = "", total = 0; cart.forEach((item, i) => { total += (item.price * item.quantity); html += `<div class="flex justify-between items-center py-2 text-slate-700 font-medium"><div class="truncate"><div class="font-bold">${item.name}</div><div class="text-[11px] text-slate-400 font-mono">รหัส: ${item.barcode} | ${item.price} ฿ × ${item.quantity}</div></div><span class="font-bold text-slate-800">${(item.price * item.quantity).toFixed(2)} ฿</span></div>`; }); list.innerHTML = cart.length ? html : "<p class='text-slate-400 text-center py-4 text-xs'>ไม่มีสินค้าในตะกร้า</p>"; document.getElementById('grand-total').innerText = total.toFixed(2) + " ฿"; document.getElementById('checkoutBtn').disabled = !cart.length; document.getElementById('checkoutBtn').className = cart.length ? "w-full bg-indigo-600 text-white font-bold py-4 rounded-xl text-base shadow-md active:scale-95 transition-all duration-150 cursor-pointer" : "w-full bg-slate-300 text-slate-500 font-bold py-4 rounded-xl text-base shadow-sm cursor-not-allowed"; }
         function clearCart() { cart = []; updateCartUI(); }
-
-        function submitOrder() { 
-            if(!cart.length) return; 
-            const cust = document.getElementById('customerName').value.trim(); 
-            const pay = document.getElementById('payment').value; 
-            if(pay === "ยังไม่ได้ชำระเงิน" && cust === "ทั่วไป") { showSuccessToast("กรุณาใส่ชื่อคนค้างจ่าย!", true); return; } 
-            
-            document.getElementById('checkoutBtn').disabled = true; 
-            document.getElementById('checkoutBtn').innerText = "⏳ กำลังบันทึกธุรกรรม..."; 
-
-            fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ payment: pay, customer: cust, items: cart }) }) 
-            .then(() => { 
-                showSuccessToast("🎉 บันทึกเข้า Google Sheet สำเร็จ!"); 
-                clearCart(); 
-                document.getElementById('customerName').value = "ทั่วไป"; 
-            })
-            .catch(() => showSuccessToast("เกิดข้อผิดพลาดเครือข่าย", true))
-            .finally(() => { 
-                document.getElementById('checkoutBtn').innerText = "🚀 ยืนยันการขาย (บันทึกข้อมูล)"; 
-                updateCartUI();
-            }); 
-        }
-
-        // ระบบรายงานประวัติ (เหมือนเดิม)
+        function submitOrder() { if(!cart.length) return; const cust = document.getElementById('customerName').value.trim(); const pay = document.getElementById('payment').value; if(pay === "ยังไม่ได้ชำระเงิน" && cust === "ทั่วไป") { showSuccessToast("กรุณาใส่ชื่อคนค้างจ่าย!", true); return; } document.getElementById('checkoutBtn').disabled = true; document.getElementById('checkoutBtn').innerText = "⏳ กำลังบันทึกธุรกรรม..."; fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ payment: pay, customer: cust, items: cart }) }).then(() => { showSuccessToast("🎉 บันทึกเข้า Google Sheet สำเร็จ!"); clearCart(); document.getElementById('customerName').value = "ทั่วไป"; }).finally(() => { document.getElementById('checkoutBtn').innerText = "🚀 ยืนยันการขาย (บันทึกข้อมูล)"; updateCartUI(); }); }
+        
         function openHistoryModal() { 
             showModal("📊 รายงานสรุปยอดขายรายวัน", "<p class='text-center py-4 text-slate-400 animate-pulse'>⏳ กำลังเชื่อมโยงฐานข้อมูลแผ่นงาน...</p>"); 
             fetch(`${WEB_APP_URL}?action=getHistory`).then(r=>r.json()).then(data => { 
@@ -306,18 +141,71 @@
             }); 
         }
 
+        // 🚨 ฟังก์ชันใหม่: แสดงรายชื่อลูกค้าค้างจ่าย พร้อมปุ่มกด "เคลียร์เงินสำเร็จ"
         function openUnpaidModal() { 
             showModal("🚨 รายชื่อลูกค้าค้างจ่ายเงิน", "<p class='text-center py-4 text-slate-400 animate-pulse'>⏳ กำลังประมวลผลบิลคงค้าง...</p>"); 
             fetch(`${WEB_APP_URL}?action=getHistory`).then(r=>r.json()).then(data => { 
                 const unpaid = data.filter(i => i.payment === "ยังไม่ได้ชำระเงิน"); 
                 const debts = {}; unpaid.forEach(i => { if(!debts[i.customer]) debts[i.customer] = {total:0, list:[]}; debts[i.customer].total += i.total; debts[i.customer].list.push(i); }); 
-                let html = ""; for(const c in debts) { 
-                    html += `<div class="bg-rose-50/70 border border-rose-100 p-3 rounded-xl mb-2"><div class="flex justify-between font-bold text-rose-900 border-b border-rose-100 pb-1.5 text-xs"><span>👤 คุณ ${c}</span><span class="bg-white border border-rose-200 px-2 py-0.5 rounded-md text-rose-600 font-black">ค้าง: ${debts[c].total.toFixed(2)} ฿</span></div><div class="text-[10px] text-slate-500 pt-1 space-y-0.5">`; 
-                    debts[c].list.forEach(i => { html += `<div>• ${i.date} - ${i.name} (${i.total} ฿)</div>`; }); 
+                
+                let html = ""; 
+                for(const c in debts) { 
+                    html += `
+                        <div class="bg-rose-50/70 border border-rose-100 p-3 rounded-xl mb-2">
+                            <div class="flex justify-between items-center border-b border-rose-100 pb-1.5 text-xs font-bold text-rose-900">
+                                <span>👤 คุณ ${c}</span>
+                                <span class="bg-white border border-rose-200 px-2 py-0.5 rounded-md text-rose-600 font-black">ค้าง: ${debts[c].total.toFixed(2)} ฿</span>
+                            </div>
+                            <div class="text-[11px] text-slate-500 pt-2 space-y-2">
+                    `; 
+                    
+                    debts[c].list.forEach(i => { 
+                        html += `
+                            <div class="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                                <div>
+                                    <span class="font-bold text-slate-700">${i.name}</span>
+                                    <div class="text-[9px] text-slate-400">${i.date} (${i.time}) - ยอด: ${i.total} ฿</div>
+                                </div>
+                                <button onclick="markAsPaid(${i.rowId}, '${c}', '${i.name}')" 
+                                    class="bg-emerald-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-md shadow-sm active:scale-95 transition">
+                                    💸 จ่ายแล้ว
+                                </button>
+                            </div>
+                        `; 
+                    }); 
                     html += `</div></div>`; 
                 } 
                 document.getElementById('modalContent').innerHTML = html || "🎉 ไม่พบรายชื่อคนค้างชำระเงิน"; 
             }); 
+        }
+
+        // ฟังก์ชันเมื่อกดปุ่ม "จ่ายแล้ว"
+        function markAsPaid(rowId, customerName, itemName) {
+            // ให้เลือกช้อยส์วิธีจ่ายเงิน
+            const method = prompt(`บิลของคุณ ${customerName} (${itemName})\nกรุณาพิมพ์วิธีชำระเงิน:\n1 - โอนเงิน\n2 - เงินสด`, "โอนเงิน");
+            
+            if (method === null) return; // กดยกเลิก
+            
+            let finalMethod = "โอนเงิน";
+            if (method === "2" || method.trim() === "เงินสด") finalMethod = "เงินสด";
+
+            showSuccessToast("⏳ กำลังบันทึกยอดเงิน...");
+            
+            // ส่งค่าไปบอก Google Apps Script เพื่อแก้ไข Row ตาม ID
+            fetch(WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: "updatePayment",
+                    rowId: rowId,
+                    newPaymentMethod: finalMethod
+                })
+            })
+            .then(() => {
+                showSuccessToast("💸 เคลียร์หนี้สำเร็จ!");
+                closeModal(); // ปิดหน้าต่าง
+                setTimeout(() => { openUnpaidModal(); }, 500); // เปิดรีเฟรชหน้ารายชื่อคนค้างเงินใหม่
+            })
+            .catch(() => showSuccessToast("ล้มเหลว!", true));
         }
 
         function showModal(title, text) { document.getElementById('reportModal').classList.remove('hidden'); document.getElementById('modalTitle').innerText = title; document.getElementById('modalContent').innerHTML = text; }
