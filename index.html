@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบ POS สแกนด่วน</title>
+    <title>ระบบ POS สแกนด่วน (ปิดกล้องอัตโนมัติ)</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
-<body class="bg-slate-100 min-h-screen pb-20 font-sans">
+<body class="bg-slate-100 min-h-screen pb-20 font-sans" onclick="unlockAudio()">
 
     <div class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-40 flex justify-between items-center">
         <span class="font-bold">📱 ระบบขายหน้าร้าน</span>
@@ -21,9 +21,10 @@
         <div class="bg-white p-3 rounded-xl shadow-sm border">
             <div class="flex justify-between items-center mb-2">
                 <span class="text-xs font-bold text-slate-600">กล้องสแกนสินค้า</span>
-                <button id="cameraToggleBtn" onclick="toggleCamera()" class="bg-emerald-500 text-white text-xs px-3 py-1 rounded-full">🟢 กล้องเปิดอยู่ (คลิกปิด)</button>
+                <button id="cameraToggleBtn" onclick="toggleCamera()" class="bg-red-500 text-white text-xs px-3 py-1 rounded-full">🔴 กล้องปิดอยู่ (คลิกเปิดเพื่อสแกน)</button>
             </div>
             <div id="reader" class="w-full bg-black rounded-lg overflow-hidden min-h-[150px]"></div>
+            <div id="scan-status" class="text-center text-xs font-semibold text-slate-500 mt-2">[ กดปุ่มเปิดกล้องเพื่อเริ่มสแกน ]</div>
         </div>
 
         <div class="bg-white p-4 rounded-xl shadow-sm border space-y-3 text-xs">
@@ -76,28 +77,46 @@
         let cart = [];
         let html5Qrcode;
         let isCameraOpen = false;
+        let audioCtx = null;
 
-        // ฟังก์ชันสร้างเสียงติ๊ด (Beep) แบบไม่ต้องโหลดไฟล์
+        // ฟังก์ชันปลดล็อกระบบเสียงเมื่อผู้ใช้สัมผัสหน้าจอครั้งแรก
+        function unlockAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // ฟังก์ชันสร้างเสียงติ๊ดแบบใหม่ให้เสถียรขึ้น
         function playBeepSound() {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.type = 'sine'; osc.frequency.value = 800; // ความถี่เสียงแหลม
-            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-            osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.1);
+            try {
+                unlockAudio();
+                if (!audioCtx) return;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.type = 'sine'; osc.frequency.setValueAtTime(1000, audioCtx.currentTime); // ปรับเสียงให้แหลมชัดขึ้นเป็น 1000Hz
+                gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+                osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.08);
+            } catch(e) { console.log("เสียงบล็อก:", e); }
         }
 
         // ฟังก์ชันเปิดกล้องหลัง
         function startCamera() {
+            document.getElementById('scan-status').innerText = "⏳ กำลังเปิดกล้องหลัง...";
             html5Qrcode = new Html5Qrcode("reader");
-            html5Qrcode.start({ facingMode: "environment" }, { fps: 12, qrbox: { width: 250, height: 130 } }, onScanSuccess, () => {})
+            html5Qrcode.start({ facingMode: "environment" }, { fps: 15, qrbox: { width: 250, height: 130 } }, onScanSuccess, () => {})
             .then(() => {
                 isCameraOpen = true;
                 document.getElementById('cameraToggleBtn').innerText = "🟢 กล้องเปิดอยู่ (คลิกปิด)";
                 document.getElementById('cameraToggleBtn').className = "bg-emerald-500 text-white text-xs px-3 py-1 rounded-full";
-            }).catch(err => console.log(err));
+                document.getElementById('scan-status').innerText = "🎯 เล็งบาร์โค้ดให้อยู่ในกรอบได้เลย";
+            }).catch(err => {
+                document.getElementById('scan-status').innerText = "❌ เปิดกล้องไม่สำเร็จ กรุณาลองกดเปิดใหม่อีกครั้ง";
+            });
         }
 
         // ฟังก์ชันปิดกล้อง
@@ -108,105 +127,32 @@
                     document.getElementById('reader').innerHTML = "";
                     document.getElementById('cameraToggleBtn').innerText = "🔴 กล้องปิดอยู่ (คลิกเปิด)";
                     document.getElementById('cameraToggleBtn').className = "bg-red-500 text-white text-xs px-3 py-1 rounded-full";
-                });
+                }).catch(e => console.log(e));
             }
         }
 
         function toggleCamera() { isCameraOpen ? stopCamera() : startCamera(); }
-        window.addEventListener('DOMContentLoaded', startCamera); // เข้าเว็บแล้วเปิดกล้องทันที
 
-        // เมื่อสแกนติด
+        // เมื่อกล้องสแกนติดสำเร็จ
         function onScanSuccess(text) { 
-            playBeepSound(); // ส่งเสียงติ๊ด
-            if (navigator.vibrate) navigator.vibrate(80); // เครื่องสั่น
+            playBeepSound(); // 1. เล่นเสียงติ๊ดทันที
+            if (navigator.vibrate) navigator.vibrate([100, 50, 100]); // 2. สั่นมือถือแบบเน้นๆ
+            
+            stopCamera(); // 3. สั่งปิดกล้องตัดสัญญาณทันที ไม่ให้สแกนต่อซ้ำซ้อน
+            
+            document.getElementById('scan-status').innerHTML = "✅ สแกนติดรหัส: <span class='text-blue-600 font-bold'>" + text + "</span> (กล้องปิดแล้ว)";
             document.getElementById('barcode').value = text; 
             fetchProductData(text); 
         }
 
-        // ดึงข้อมูลสินค้าจากฐานข้อมูล Google Sheet
-        function fetchProductData(bc) {
-            if(!bc) return;
-            document.getElementById('productName').value = "⏳ กำลังค้นหา...";
-            fetch(`${WEB_APP_URL}?barcode=${bc}`).then(r=>r.json()).then(d=>{
-                if(d.found){
-                    document.getElementById('productName').value = d.name;
-                    document.getElementById('price').value = d.price;
-                } else {
-                    document.getElementById('productName').value = "❌ ไม่พบสินค้าในระบบ (กรอกเองได้)";
-                }
-            });
-        }
-
-        // เพิ่มสินค้าเข้าตะกร้าบิล
-        function addToCart() {
-            const b = document.getElementById('barcode').value, n = document.getElementById('productName').value, p = parseFloat(document.getElementById('price').value), q = parseInt(document.getElementById('quantity').value);
-            if(!b || !n || isNaN(p)) { alert("กรุณาใส่ข้อมูลให้ครบครับ"); return; }
-            cart.push({barcode:b, name:n, price:p, quantity:q});
-            updateCartUI();
-            document.getElementById('barcode').value=""; document.getElementById('productName').value=""; document.getElementById('price').value="";
-        }
-
-        // อัปเดตรายการสินค้าในบิลบนหน้าจอ
-        function updateCartUI() {
-            const list = document.getElementById('cart-list'); let html = "", total = 0;
-            cart.forEach((item, i) => {
-                total += (item.price * item.quantity);
-                html += `<div class="flex justify-between py-1"><span>${item.name} x${item.quantity}</span><span class="font-bold">${(item.price * item.quantity).toFixed(2)} ฿</span></div>`;
-            });
-            list.innerHTML = cart.length ? html : "<p class='text-slate-400 text-center py-2'>ไม่มีสินค้าในตะกร้า</p>";
-            document.getElementById('grand-total').innerText = total.toFixed(2) + " ฿";
-            document.getElementById('checkoutBtn').disabled = !cart.length;
-            document.getElementById('checkoutBtn').className = cart.length ? "w-full bg-emerald-500 text-white font-bold py-3 rounded-xl text-sm shadow" : "w-full bg-slate-400 text-white font-bold py-3 rounded-xl text-sm shadow cursor-not-allowed";
-        }
+        // [ ส่วนที่เหลือ: fetchProductData, addToCart, updateCartUI, clearCart, submitOrder, รายงาน ใช้ของเดิมทั้งหมด ]
+        function fetchProductData(bc) { if(!bc) return; document.getElementById('productName').value = "⏳ กำลังค้นหา..."; fetch(`${WEB_APP_URL}?barcode=${bc}`).then(r=>r.json()).then(d=>{ if(d.found){ document.getElementById('productName').value = d.name; document.getElementById('price').value = d.price; } else { document.getElementById('productName').value = "❌ ไม่พบสินค้าในระบบ (กรอกเองได้)"; } }); }
+        function addToCart() { const b = document.getElementById('barcode').value, n = document.getElementById('productName').value, p = parseFloat(document.getElementById('price').value), q = parseInt(document.getElementById('quantity').value); if(!b || !n || isNaN(p)) { alert("กรุณาใส่ข้อมูลให้ครบครับ"); return; } cart.push({barcode:b, name:n, price:p, quantity:q}); updateCartUI(); document.getElementById('barcode').value=""; document.getElementById('productName').value=""; document.getElementById('price').value=""; document.getElementById('scan-status').innerText = "[ กดปุ่มเปิดกล้องเพื่อสแกนชิ้นต่อไป ]"; }
+        function updateCartUI() { const list = document.getElementById('cart-list'); let html = "", total = 0; cart.forEach((item, i) => { total += (item.price * item.quantity); html += `<div class="flex justify-between py-1"><span>${item.name} x${item.quantity}</span><span class="font-bold">${(item.price * item.quantity).toFixed(2)} ฿</span></div>`; }); list.innerHTML = cart.length ? html : "<p class='text-slate-400 text-center py-2'>ไม่มีสินค้าในตะกร้า</p>"; document.getElementById('grand-total').innerText = total.toFixed(2) + " ฿"; document.getElementById('checkoutBtn').disabled = !cart.length; document.getElementById('checkoutBtn').className = cart.length ? "w-full bg-emerald-500 text-white font-bold py-3 rounded-xl text-sm shadow" : "w-full bg-slate-400 text-white font-bold py-3 rounded-xl text-sm shadow cursor-not-allowed"; }
         function clearCart() { cart = []; updateCartUI(); }
-
-        // ส่งข้อมูลบันทึกยอดขายไป Google Sheet
-        function submitOrder() {
-            if(!cart.length) return;
-            const cust = document.getElementById('customerName').value.trim();
-            const pay = document.getElementById('payment').value;
-            if(pay === "ยังไม่ได้ชำระเงิน" && cust === "ทั่วไป") { alert("⚠️ ถ้าลูกค้ายังไม่จ่ายเงิน กรุณาใส่ชื่อผู้ซื้อด้วยครับ"); return; }
-            
-            document.getElementById('checkoutBtn').disabled = true;
-            document.getElementById('checkoutBtn').innerText = "⏳ กำลังบันทึก...";
-
-            fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ payment: pay, customer: cust, items: cart }) })
-            .then(() => {
-                alert("🎉 บันทึกสำเร็จ!"); clearCart(); document.getElementById('customerName').value = "ทั่วไป";
-            }).finally(() => {
-                document.getElementById('checkoutBtn').innerText = "🛍️ ยืนยันการขาย (ส่งเข้า Google Sheet)";
-            });
-        }
-
-        // ดูรายงานยอดขายรายวัน
-        function openHistoryModal() {
-            showModal("📊 ประวัติยอดขายรายวัน", "⏳ กำลังโหลด...");
-            fetch(`${WEB_APP_URL}?action=getHistory`).then(r=>r.json()).then(data => {
-                const grouped = {}; data.forEach(i => { if(!grouped[i.date]) grouped[i.date] = {items:[], total:0}; grouped[i.date].items.push(i); grouped[i.date].total += i.total; });
-                let html = ""; for(const d in grouped) {
-                    html += `<div class="bg-slate-50 border p-3 rounded-xl mb-2"><div class="flex justify-between font-bold border-b pb-1 text-slate-700"><span>📅 ${d}</span><span class="text-blue-600">รวม: ${grouped[d].total.toFixed(2)} ฿</span></div>`;
-                    grouped[d].items.forEach(i => { html += `<div class="flex justify-between py-1 text-slate-500"><span>[${i.time}] ${i.name} (${i.customer})</span><span>${i.total.toFixed(2)} ฿ (${i.payment})</span></div>`; });
-                    html += `</div>`;
-                }
-                document.getElementById('modalContent').innerHTML = html || "ไม่มีข้อมูล";
-            });
-        }
-
-        // ดูรายชื่อคนติดเงิน (ค้างชำระ)
-        function openUnpaidModal() {
-            showModal("🚨 รายชื่อลูกค้าค้างชำระเงิน", "⏳ กำลังโหลด...");
-            fetch(`${WEB_APP_URL}?action=getHistory`).then(r=>r.json()).then(data => {
-                const unpaid = data.filter(i => i.payment === "ยังไม่ได้ชำระเงิน");
-                const debts = {}; unpaid.forEach(i => { if(!debts[i.customer]) debts[i.customer] = {total:0, list:[]}; debts[i.customer].total += i.total; debts[i.customer].list.push(i); });
-                let html = ""; for(const c in debts) {
-                    html += `<div class="bg-red-50 border border-red-200 p-3 rounded-xl mb-2"><div class="flex justify-between font-bold text-red-800 border-b border-red-100 pb-1"><span>👤 คุณ ${c}</span><span>ยอดค้าง: ${debts[c].total.toFixed(2)} ฿</span></div><div class="text-[11px] text-slate-500 pt-1">`;
-                    debts[c].list.forEach(i => { html += `<div>• ${i.date} - ${i.name} (${i.total} ฿)</div>`; });
-                    html += `</div></div>`;
-                }
-                document.getElementById('modalContent').innerHTML = html || "🎉 ไม่มีลูกค้าค้างชำระเงิน";
-            });
-        }
-
+        function submitOrder() { if(!cart.length) return; const cust = document.getElementById('customerName').value.trim(); const pay = document.getElementById('payment').value; if(pay === "ยังไม่ได้ชำระเงิน" && cust === "ทั่วไป") { alert("⚠️ ถ้าลูกค้ายังไม่จ่ายเงิน กรุณาใส่ชื่อผู้ซื้อด้วยครับ"); return; } document.getElementById('checkoutBtn').disabled = true; document.getElementById('checkoutBtn').innerText = "⏳ กำลังบันทึก..."; fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ payment: pay, customer: cust, items: cart }) }).then(() => { alert("🎉 บันทึกสำเร็จ!"); clearCart(); document.getElementById('customerName').value = "ทั่วไป"; }).finally(() => { document.getElementById('checkoutBtn').innerText = "🛍️ ยืนยันการขาย (ส่งเข้า Google Sheet)"; }); }
+        function openHistoryModal() { showModal("📊 ประวัติยอดขายรายวัน", "⏳ กำลังโหลด..."); fetch(`${WEB_APP_URL}?action=getHistory`).then(r=>r.json()).then(data => { const grouped = {}; data.forEach(i => { if(!grouped[i.date]) grouped[i.date] = {items:[], total:0}; grouped[i.date].items.push(i); grouped[i.date].total += i.total; }); let html = ""; for(const d in grouped) { html += `<div class="bg-slate-50 border p-3 rounded-xl mb-2"><div class="flex justify-between font-bold border-b pb-1 text-slate-700"><span>📅 ${d}</span><span class="text-blue-600">รวม: ${grouped[d].total.toFixed(2)} ฿</span></div>`; grouped[d].items.forEach(i => { html += `<div class="flex justify-between py-1 text-slate-500"><span>[${i.time}] ${i.name} (${i.customer})</span><span>${i.total.toFixed(2)} ฿ (${i.payment})</span></div>`; }); html += `</div>`; } document.getElementById('modalContent').innerHTML = html || "ไม่มีข้อมูล"; }); }
+        function openUnpaidModal() { showModal("🚨 รายชื่อลูกค้าค้างชำระเงิน", "⏳ กำลังโหลด..."); fetch(`${WEB_APP_URL}?action=getHistory`).then(r=>r.json()).then(data => { const unpaid = data.filter(i => i.payment === "ยังไม่ได้ชำระเงิน"); const debts = {}; unpaid.forEach(i => { if(!debts[i.customer]) debts[i.customer] = {total:0, list:[]}; debts[i.customer].total += i.total; debts[i.customer].list.push(i); }); let html = ""; for(const c in debts) { html += `<div class="bg-red-50 border border-red-200 p-3 rounded-xl mb-2"><div class="flex justify-between font-bold text-red-800 border-b border-red-100 pb-1"><span>👤 คุณ ${c}</span><span>ยอดค้าง: ${debts[c].total.toFixed(2)} ฿</span></div><div class="text-[11px] text-slate-500 pt-1">`; debts[c].list.forEach(i => { html += `<div>• ${i.date} - ${i.name} (${i.total} ฿)</div>`; }); html += `</div></div>`; } document.getElementById('modalContent').innerHTML = html || "🎉 ไม่มีลูกค้าค้างชำระเงิน"; }); }
         function showModal(title, text) { document.getElementById('reportModal').classList.remove('hidden'); document.getElementById('modalTitle').innerText = title; document.getElementById('modalContent').innerHTML = text; }
         function closeModal() { document.getElementById('reportModal').classList.add('hidden'); }
     </script>
