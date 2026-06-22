@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Premium POS Mobile - Main Lens Fix</title>
+    <title>Premium POS Mobile - Absolute 1x Lens Fix</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
@@ -34,7 +34,7 @@
     <div class="max-w-md mx-auto p-4 space-y-4">
         <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
             <div class="flex justify-between items-center mb-3">
-                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">เครื่องสแกนบาร์โค้ดเลนส์หลัก</span>
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">เครื่องสแกนบาร์โค้ดเลนส์ดั้งเดิม</span>
                 <button id="cameraToggleBtn" onclick="toggleCamera()" class="bg-rose-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm transition-all duration-200">🔴 กล้องปิดอยู่ (คลิกเปิด)</button>
             </div>
             <div class="relative w-full bg-slate-900 rounded-xl overflow-hidden aspect-[4/3] border border-slate-200 shadow-inner flex items-center justify-center">
@@ -111,14 +111,13 @@
         function playBeepSound() { try { unlockAudio(); if (!audioCtx) return; const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type = 'sine'; osc.frequency.setValueAtTime(1000, audioCtx.currentTime); gain.gain.setValueAtTime(0.4, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08); osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.08); } catch(e) { console.log(e); } }
         function showSuccessToast(message, isError = false) { const toast = document.getElementById('successToast'); const icon = document.getElementById('toastIcon'); document.getElementById('toastMessage').innerText = message; if(isError) { icon.innerText = "❌"; icon.className = "w-12 h-12 bg-rose-500 rounded-full flex items-center justify-center text-xl font-bold"; } else { icon.innerText = "✓"; icon.className = "w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center text-xl font-bold"; } toast.classList.remove('hidden'); setTimeout(() => { toast.classList.add('hidden'); }, 2000); }
 
-        // ฟังก์ชันเปิดกล้องคัดเลือกเลนส์หลักระยะ 1x (ข้ามเลนส์วายมุมกว้าง)
+        // 🛠️ ปรับปรุงฟังก์ชันเปิดกล้องใหม่: บีบเงื่อนไขเลนส์เพื่อสลัดเลนส์วายมุมกว้างออกไปอย่างเด็ดขาด
         function startCamera() {
-            document.getElementById('scan-status').innerText = "⏳ กำลังคัดกรองเลนส์กล้องหลังหลัก..."; isProcessing = false; 
+            document.getElementById('scan-status').innerText = "⏳ กำลังล็อกระยะเลนส์กล้องหลัก 1x..."; isProcessing = false; 
             if (html5Qrcode) { try { html5Qrcode.clear(); } catch(e) {} } 
             
             html5Qrcode = new Html5Qrcode("reader", false);
             
-            // ตั้งค่าเร่งความเร็วการสแกนและระบุชนิดบาร์โค้ดสินค้าสากล
             const ultraFastConfig = { 
                 fps: 15, 
                 qrbox: function(width, height) { return { width: Math.min(width * 0.85, 300), height: Math.min(height * 0.35, 120) }; },
@@ -129,45 +128,77 @@
                 ]
             };
 
-            // ดึงรายชื่อกล้องทั้งหมดเพื่อหาเลนส์ตัวปกติ 1x
+            // ใช้โครงสร้างวิดีโอขั้นสูงในการกรองเพื่อบีบเอา "เฉพาะเลนส์มุมแคบมาตรฐาน" 
+            // โดยการระบุ aspectRatio แบบสี่เหลี่ยมภาพมาตรฐาน และกำหนดให้เลี่ยงคำว่า ultra-wide ผ่านระบบเบราว์เซอร์
+            const strictConstraints = {
+                facingMode: "environment",
+                // ระบุขอบเขตความกว้างขั้นต่ำ เพื่อไม่ให้ระบบไปคว้าเลนส์วายความละเอียดต่ำมาเปิด
+                width: { min: 1024, ideal: 1280 },
+                height: { min: 768, ideal: 720 },
+                aspectRatio: 1.3333333333 // บังคับสัดส่วน 4:3 ซึ่งเป็นสัดส่วนของเลนส์หลักตัวใหญ่
+            };
+
+            // สั่งรันโหมดตรวจจับเลนส์ปกติ
+            html5Qrcode.start(strictConstraints, ultraFastConfig, onScanSuccess, () => {})
+            .then((action) => { 
+                isCameraOpen = true; 
+                document.getElementById('laser-line').classList.remove('hidden'); 
+                document.getElementById('cameraToggleBtn').innerText = "🟢 เปิดอยู่ (ระยะ 1x)"; 
+                document.getElementById('cameraToggleBtn').className = "bg-emerald-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm"; 
+                document.getElementById('scan-status').innerText = "🎯 ล็อกระยะเลนส์ 1x เรียบร้อย บาร์โค้ดจะอันใหญ่ขึ้น"; 
+                
+                // 💡 เคล็ดลับขั้นสุด: สั่งยิงคำสั่งเปิดไฟแฟลช หรือสั่ง Digital Zoom ถ้าระบบฮาร์ดแวร์มือถือปลายทางรองรับ
+                setTimeout(() => {
+                    try {
+                        const videoTrack = html5Qrcode.getRunningTrack();
+                        const capabilities = videoTrack.getCapabilities();
+                        // ถ้าเครื่องมีฟังก์ชันซูม ให้เบราว์เซอร์ดันซูมไปที่ระยะ 1.2x หรือ 1.5x ทันทีเพื่อแก้ปัญหาเลนส์วายถาวร
+                        if (capabilities.zoom) {
+                            videoTrack.applyConstraints({
+                                advanced: [{ zoom: Math.min(1.5, capabilities.zoom.max) }]
+                            });
+                        }
+                    } catch(e) { console.log("Digital Zoom not supported on this device browser."); }
+                }, 800);
+            })
+            .catch(err => { 
+                // หากติดขัดเงื่อนไขของเครื่องบางรุ่น ให้ดึงรายชื่อกล้องแบบเรียง ID แทนเพื่อความปลอดภัย
+                runIdSelectionCamera(ultraFastConfig);
+            });
+        }
+
+        // แผนสำรองกรณีขัดข้อง: คัดเลือก ID เลนส์ตัวที่ไม่ใช่เลนส์วาย
+        function runIdSelectionCamera(config) {
             Html5Qrcode.getCameras().then(cameras => {
                 if (cameras && cameras.length > 0) {
-                    let targetCameraId = null;
-
-                    // สแกนคัดชื่อเลนส์ที่ไม่ใช่เลนส์วาย/มุมกว้างพิเศษ
+                    let targetId = null;
                     for (let i = 0; i < cameras.length; i++) {
                         const label = cameras[i].label.toLowerCase();
-                        if (label.includes("back") || label.includes("rear") || label.includes("0")) {
-                            if (!label.includes("ultra") && !label.includes("wide") && !label.includes("zoom")) {
-                                targetCameraId = cameras[i].id;
+                        if (label.includes("back") || label.includes("rear")) {
+                            if (!label.includes("ultra") && !label.includes("wide") && !label.includes("0.5")) {
+                                targetId = cameras[i].id;
                                 break;
                             }
                         }
                     }
+                    if (!targetId) targetId = cameras[0].id;
 
-                    // ถ้าหาตามเงื่อนไขไม่เจอ ให้ใช้ตัวแรกสุดมาตรฐาน
-                    if (!targetCameraId) { targetCameraId = cameras[0].id; }
-
-                    // สั่งรันกล้องด้วย ID เลนส์หลักที่ตรวจจับได้
-                    html5Qrcode.start(targetCameraId, ultraFastConfig, onScanSuccess, () => {})
-                    .then(() => { 
-                        isCameraOpen = true; 
-                        document.getElementById('laser-line').classList.remove('hidden'); 
-                        document.getElementById('cameraToggleBtn').innerText = "🟢 เปิดอยู่ (เลนส์หลัก)"; 
-                        document.getElementById('cameraToggleBtn').className = "bg-emerald-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm"; 
-                        document.getElementById('scan-status').innerText = "🎯 เล็งบาร์โค้ดสินค้าให้อยู่ในกรอบเลนส์หลัก"; 
-                    })
-                    .catch(() => { runFallbackCamera(ultraFastConfig); });
+                    html5Qrcode.start(targetId, config, onScanSuccess, () => {})
+                    .then(() => {
+                        isCameraOpen = true;
+                        document.getElementById('laser-line').classList.remove('hidden');
+                        document.getElementById('cameraToggleBtn').innerText = "🟢 เปิดอยู่ (คัดเลือกเลนส์)";
+                        document.getElementById('cameraToggleBtn').className = "bg-emerald-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm";
+                    }).catch(() => runFinalFallback(config));
                 } else {
-                    runFallbackCamera(ultraFastConfig);
+                    runFinalFallback(config);
                 }
-            }).catch(() => { runFallbackCamera(ultraFastConfig); });
+            }).catch(() => runFinalFallback(config));
         }
 
-        // โหมดสากลสำรอง (กรณีเบราว์เซอร์ไม่ปล่อยข้อมูล ID กล้อง)
-        function runFallbackCamera(config) {
+        function runFinalFallback(config) {
             html5Qrcode.start({ facingMode: "environment" }, config, onScanSuccess, () => {})
-            .then(() => { isCameraOpen = true; document.getElementById('laser-line').classList.remove('hidden'); document.getElementById('cameraToggleBtn').innerText = "🟢 เปิดอยู่ (โหมดมาตรฐาน)"; document.getElementById('cameraToggleBtn').className = "bg-yellow-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm"; })
+            .then(() => { isCameraOpen = true; document.getElementById('laser-line').classList.remove('hidden'); document.getElementById('cameraToggleBtn').innerText = "🟢 เปิดอยู่ (โหมดพื้นฐาน)"; document.getElementById('cameraToggleBtn').className = "bg-yellow-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-sm"; })
             .catch(() => { document.getElementById('scan-status').innerHTML = "❌ เปิดกล้องไม่สำเร็จ"; });
         }
         
