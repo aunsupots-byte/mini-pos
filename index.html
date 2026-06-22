@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Premium POS Mobile - Clear Customer Debt</title>
+    <title>Premium POS Mobile - Expanded Reports</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
@@ -94,7 +94,15 @@
         </div>
     </div>
 
-    <div id="reportModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end justify-center"><div class="bg-white w-full max-w-md rounded-t-3xl max-h-[85vh] flex flex-col shadow-2xl animate-slide-up"><div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-3xl"><h2 id="modalTitle" class="font-bold text-sm text-slate-700">รายงาน</h2><button onclick="closeModal()" class="w-8 h-8 bg-slate-200 text-slate-500 rounded-full font-bold flex items-center justify-center">✕</button></div><div id="modalContent" class="p-4 overflow-y-auto flex-1 space-y-3 text-xs"></div></div></div>
+    <div id="reportModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center transition-all duration-300">
+        <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl max-h-[94vh] flex flex-col shadow-2xl animate-slide-up">
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-3xl sm:rounded-t-3xl">
+                <h2 id="modalTitle" class="font-bold text-sm text-slate-700">รายงาน</h2>
+                <button onclick="closeModal()" class="w-8 h-8 bg-slate-200 text-slate-500 rounded-full font-bold flex items-center justify-center">✕</button>
+            </div>
+            <div id="modalContent" class="p-4 overflow-y-auto flex-1 space-y-4 text-xs"></div>
+        </div>
+    </div>
 
     <div id="successToast" class="hidden fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-slate-900/90 text-white px-6 py-5 rounded-2xl flex flex-col items-center justify-center space-y-2 z-50 shadow-2xl backdrop-blur-md max-w-[250px] text-center border border-white/10">
         <div id="toastIcon" class="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center text-xl font-bold">✓</div>
@@ -102,7 +110,6 @@
     </div>
 
     <script>
-        // ⚠️ วาง URL ของ Google Apps Script ของคุณที่นี่ (ลงท้ายด้วย /exec)
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx92ov484ob-O4ncwwjpzhD2E5wgwmuhAguCRD8gBiVpyhCiyqLru0LTCqlnHjwHhtFvg/exec"; 
         
         let cart = []; let html5Qrcode = null; let isCameraOpen = false; let audioCtx = null; let isProcessing = false;
@@ -128,31 +135,37 @@
         function clearCart() { cart = []; updateCartUI(); }
         function submitOrder() { if(!cart.length) return; const cust = document.getElementById('customerName').value.trim(); const pay = document.getElementById('payment').value; if(pay === "ยังไม่ได้ชำระเงิน" && cust === "ทั่วไป") { showSuccessToast("กรุณาใส่ชื่อคนค้างจ่าย!", true); return; } document.getElementById('checkoutBtn').disabled = true; document.getElementById('checkoutBtn').innerText = "⏳ กำลังบันทึกธุรกรรม..."; fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ payment: pay, customer: cust, items: cart }) }).then(() => { showSuccessToast("🎉 บันทึกเข้า Google Sheet สำเร็จ!"); clearCart(); document.getElementById('customerName').value = "ทั่วไป"; }).finally(() => { document.getElementById('checkoutBtn').innerText = "🚀 ยืนยันการขาย (บันทึกข้อมูล)"; updateCartUI(); }); }
         
+        // 🛠️ แก้ไข: ขยายพื้นที่กล่องประวัติขายในวันนั้นๆ ให้ยาวขยายตัวตามจอ (เปลี่ยนจาก max-h-32 เป็น max-h-[50vh])
         function openHistoryModal() { 
             showModal("📊 รายงานสรุปยอดขายรายวัน", "<p class='text-center py-4 text-slate-400 animate-pulse'>⏳ กำลังเชื่อมโยงฐานข้อมูลแผ่นงาน...</p>"); 
             fetch(`${WEB_APP_URL}?action=getHistory&_t=${Date.now()}`).then(r=>r.json()).then(data => { 
                 const grouped = {}; data.forEach(i => { if(!grouped[i.date]) grouped[i.date] = {items:[], total:0}; grouped[i.date].items.push(i); grouped[i.date].total += i.total; }); 
                 let html = ""; for(const d in grouped) { 
-                    html += `<div class="bg-slate-50 border border-slate-200/60 p-3 rounded-xl mb-2 shadow-sm"><div class="flex justify-between font-bold border-b border-slate-200/50 pb-1.5 text-slate-700 text-xs"><span>📅 ${d}</span><span class="text-indigo-600">รวม: ${grouped[d].total.toFixed(2)} ฿</span></div><div class="divide-y divide-slate-100 max-h-32 overflow-y-auto">`; 
-                    grouped[d].items.forEach(i => { html += `<div class="flex justify-between py-1.5 text-slate-600 text-[11px]"><span>[${i.time}] ${i.name} (${i.customer})</span><span class="font-bold">${i.total.toFixed(2)} ฿ <span class="font-normal text-[10px] ${i.payment === 'ยังไม่ได้ชำระเงิน' ? 'text-rose-500' : 'text-emerald-600'}">(${i.payment})</span></span></div>`; }); 
+                    html += `
+                        <div class="bg-slate-50 border border-slate-200/60 p-3 rounded-xl mb-2 shadow-sm">
+                            <div class="flex justify-between font-bold border-b border-slate-200/50 pb-1.5 text-slate-700 text-xs">
+                                <span>📅 วันที่: ${d}</span>
+                                <span class="text-indigo-600">รวม: ${grouped[d].total.toFixed(2)} ฿</span>
+                            </div>
+                            <div class="divide-y divide-slate-100 max-h-[50vh] overflow-y-auto pr-1">
+                    `; 
+                    grouped[d].items.forEach(i => { html += `<div class="flex justify-between py-2 text-slate-600 text-[11px] items-center"><span>[${i.time}] ${i.name} (${i.customer})</span><span class="font-bold text-slate-700">${i.total.toFixed(2)} ฿ <span class="font-normal text-[10px] ${i.payment === 'ยังไม่ได้ชำระเงิน' ? 'text-rose-500 font-bold' : 'text-emerald-600'}">(${i.payment})</span></span></div>`; }); 
                     html += `</div></div>`; 
                 } 
                 document.getElementById('modalContent').innerHTML = html || "ไม่มีข้อมูลประวัติการขาย"; 
             }); 
         }
 
-        // 🚨 รายชื่อลูกค้าค้างจ่ายเงิน (อัปเดตระบบ One-Click Clear ทั้งชื่อยกกล่อง)
+        // 🛠️ แก้ไข: ขยายพื้นที่ช่องแสดงรายการคนค้างจ่ายแยกรายบุคคลให้ยาวเต็มจอขึ้นเช่นกัน (max-h-40 -> max-h-[50vh])
         function openUnpaidModal() { 
             showModal("🚨 รายชื่อลูกค้าค้างจ่ายเงิน", "<p class='text-center py-4 text-slate-400 animate-pulse'>⏳ กำลังประมวลผลบิลคงค้าง...</p>"); 
             fetch(`${WEB_APP_URL}?action=getHistory&_t=${Date.now()}`).then(r=>r.json()).then(data => {
                 const unpaid = data.filter(i => i.payment === "ยังไม่ได้ชำระเงิน"); 
                 const debts = {}; unpaid.forEach(i => { if(!debts[i.customer]) debts[i.customer] = {total:0, list:[]}; debts[i.customer].total += i.total; debts[i.customer].list.push(i); }); 
                 
-                let html = ""; 
-                let customerIndex = 0;
+                let html = ""; let customerIndex = 0;
                 for(const c in debts) { 
                     customerIndex++;
-                    // ใส่ id ให้กับกล่องของลูกค้ารายนั้น เพื่อให้สั่งลบออกจากจอได้ง่ายๆ
                     html += `
                         <div id="debt-box-${customerIndex}" class="bg-rose-50/70 border border-rose-100 p-3 rounded-xl mb-3 transition-all duration-300">
                             <div class="flex justify-between items-center border-b border-rose-100 pb-2 text-xs font-bold text-rose-900">
@@ -160,62 +173,23 @@
                                     <span>👤 คุณ ${c}</span>
                                     <span class="text-[10px] text-rose-500 font-normal">ยอดรวมค้าง: ${debts[c].total.toFixed(2)} ฿</span>
                                 </div>
-                                <button onclick="clearAllCustomerDebt('${c}', ${customerIndex})" 
-                                    class="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-sm active:scale-95 transition">
-                                    💸 จ่ายเงินครบแล้ว
-                                </button>
+                                <button onclick="clearAllCustomerDebt('${c}', ${customerIndex})" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-sm active:scale-95 transition">💸 จ่ายเงินครบแล้ว</button>
                             </div>
-                            <div class="text-[10px] text-slate-500 pt-2 space-y-1">
+                            <div class="text-[10px] text-slate-500 pt-2 space-y-1.5 max-h-[50vh] overflow-y-auto">
                     `; 
-                    
-                    debts[c].list.forEach(i => { 
-                        html += `
-                            <div class="flex justify-between items-center bg-white/60 p-1.5 rounded border border-slate-100">
-                                <span>• ${i.name} (x${i.quantity})</span>
-                                <span class="font-mono font-bold">${i.total.toFixed(2)} ฿</span>
-                            </div>
-                        `; 
-                    }); 
+                    debts[c].list.forEach(i => { html += `<div class="flex justify-between items-center bg-white/60 p-2 rounded border border-slate-100 shadow-sm"><span>• ${i.name} (x${i.quantity})</span><span class="font-mono font-bold text-slate-700">${i.total.toFixed(2)} ฿</span></div>`; }); 
                     html += `</div></div>`; 
                 } 
                 document.getElementById('modalContent').innerHTML = html || "🎉 ไม่พบรายชื่อคนค้างชำระเงิน"; 
             }); 
         }
 
-        // 🔥 ฟังก์ชันใหม่: สั่งลบชื่อและบิลทั้งหมดของลูกค้ารายนั้นออกจาก Google Sheets และหน้าจอมือถือทันที
         function clearAllCustomerDebt(customerName, boxIndex) {
-            // 1. สั่งอนิเมชันให้กล่องชื่อของลูกค้ารายนั้นหายไปจากหน้าจอมือถือทันทีในเสี้ยววินาที
             const targetBox = document.getElementById(`debt-box-${boxIndex}`);
-            if (targetBox) {
-                targetBox.style.opacity = '0';
-                targetBox.style.transform = 'scale(0.9)';
-                setTimeout(() => { 
-                    targetBox.remove(); 
-                    // ตรวจสอบว่าถ้าหน้าจอไม่มีกล่องค้างชำระเหลืออยู่เลย ให้ขึ้นข้อความยินดี
-                    if(document.querySelectorAll('[id^="debt-box-"]').length === 0) {
-                        document.getElementById('modalContent').innerHTML = "🎉 ไม่พบรายชื่อคนค้างชำระเงิน";
-                    }
-                }, 300);
-            }
-
+            if (targetBox) { targetBox.style.opacity = '0'; targetBox.style.transform = 'scale(0.9)'; setTimeout(() => { targetBox.remove(); if(document.querySelectorAll('[id^="debt-box-"]').length === 0) { document.getElementById('modalContent').innerHTML = "🎉 ไม่พบรายชื่อคนค้างชำระเงิน"; } }, 300); }
             showSuccessToast(`💸 เคลียร์หนี้ คุณ ${customerName} สำเร็จ!`);
-
-            // 2. ส่งคำสั่งไปล้างหนี้ของชื่อคนนี้ทั้งหมดใน Google Sheet เบื้องหลัง (ใช้ x-www-form-urlencoded แก้ CORS ล้มเหลว)
-            const formDetails = new URLSearchParams();
-            formDetails.append('action', 'clearCustomerDebt');
-            formDetails.append('customerName', customerName);
-
-            fetch(WEB_APP_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: formDetails.toString(),
-                mode: 'no-cors'
-            })
-            .then(() => {
-                // บังคับรีเฟรชประวัติเบื้องหลังแบบไร้ Cache ป้องกันข้อมูลเก่าโผล่ซ้ำเมื่อกดเปิดดูครั้งต่อไป
-                setTimeout(() => { fetch(`${WEB_APP_URL}?action=getHistory&_t=${Date.now()}`); }, 1000);
-            })
-            .catch(err => console.log("Network sync error log:", err));
+            const formDetails = new URLSearchParams(); formDetails.append('action', 'clearCustomerDebt'); formDetails.append('customerName', customerName);
+            fetch(WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formDetails.toString(), mode: 'no-cors' }).then(() => { setTimeout(() => { fetch(`${WEB_APP_URL}?action=getHistory&_t=${Date.now()}`); }, 1000); }).catch(err => console.log(err));
         }
 
         function showModal(title, text) { document.getElementById('reportModal').classList.remove('hidden'); document.getElementById('modalTitle').innerText = title; document.getElementById('modalContent').innerHTML = text; }
