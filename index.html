@@ -2,15 +2,15 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบ POS สแกนด่วน (ปิดกล้องอัตโนมัติ)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ระบบ POS สำหรับ iOS และ Android</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
 <body class="bg-slate-100 min-h-screen pb-20 font-sans" onclick="unlockAudio()">
 
     <div class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-40 flex justify-between items-center">
-        <span class="font-bold">📱 ระบบขายหน้าร้าน</span>
+        <span class="font-bold">📱 ระบบขายหน้าร้าน (iOS OK)</span>
         <div class="flex space-x-1 text-xs font-bold">
             <button onclick="openUnpaidModal()" class="bg-red-700 p-2 rounded-lg">🚨 ค้างชำระ</button>
             <button onclick="openHistoryModal()" class="bg-blue-800 p-2 rounded-lg">📊 ยอดขาย</button>
@@ -23,7 +23,7 @@
                 <span class="text-xs font-bold text-slate-600">กล้องสแกนสินค้า</span>
                 <button id="cameraToggleBtn" onclick="toggleCamera()" class="bg-red-500 text-white text-xs px-3 py-1 rounded-full">🔴 กล้องปิดอยู่ (คลิกเปิดเพื่อสแกน)</button>
             </div>
-            <div id="reader" class="w-full bg-black rounded-lg overflow-hidden min-h-[150px]"></div>
+            <div id="reader" class="w-full bg-black rounded-lg overflow-hidden min-h-[200px]" style="width: 100%;"></div>
             <div id="scan-status" class="text-center text-xs font-semibold text-slate-500 mt-2">[ กดปุ่มเปิดกล้องเพื่อเริ่มสแกน ]</div>
         </div>
 
@@ -35,11 +35,11 @@
             <div class="grid grid-cols-2 gap-2">
                 <div>
                     <label class="block font-bold text-slate-600 mb-1">รหัสบาร์โค้ด</label>
-                    <input type="text" id="barcode" class="w-full p-2 bg-slate-50 border rounded-lg font-mono" placeholder="พิมพ์หรือสแกน" onchange="fetchProductData(this.value)">
+                    <input type="text" id="barcode" class="w-full p-2 bg-slate-50 border rounded-lg font-mono text-sm" placeholder="พิมพ์หรือสแกน" onchange="fetchProductData(this.value)">
                 </div>
                 <div>
                     <label class="block font-bold text-slate-600 mb-1">ราคา/ชิ้น (บาท)</label>
-                    <input type="number" id="price" class="w-full p-2 border rounded-lg text-right font-bold text-blue-600" placeholder="0.00">
+                    <input type="number" id="price" class="w-full p-2 border rounded-lg text-right font-bold text-blue-600 text-sm" placeholder="0.00">
                 </div>
             </div>
             <div>
@@ -71,25 +71,20 @@
     <div id="reportModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-end justify-center"><div class="bg-white w-full max-w-md rounded-t-2xl max-h-[80vh] flex flex-col"><div class="p-4 border-b flex justify-between items-center"><h2 id="modalTitle" class="font-bold text-sm">รายงาน</h2><button onclick="closeModal()" class="text-slate-400 font-bold p-1">✕</button></div><div id="modalContent" class="p-4 overflow-y-auto flex-1 space-y-3 text-xs"></div></div></div>
 
     <script>
-        // ⚠️ วาง URL ของ Google Apps Script ของคุณที่นี่
+        // ⚠️ วาง URL ของ Google Apps Script ของคุณที่นี่ (ลงท้ายด้วย /exec)
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx92ov484ob-O4ncwwjpzhD2E5wgwmuhAguCRD8gBiVpyhCiyqLru0LTCqlnHjwHhtFvg/exec"; 
         
         let cart = [];
-        let html5Qrcode;
+        let html5QrcodeScanner = null;
         let isCameraOpen = false;
         let audioCtx = null;
+        let isProcessing = false; // ตัวแปรป้องกันการสแกนซ้อนบน iOS
 
-        // ฟังก์ชันปลดล็อกระบบเสียงเมื่อผู้ใช้สัมผัสหน้าจอครั้งแรก
         function unlockAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
         }
 
-        // ฟังก์ชันสร้างเสียงติ๊ดแบบใหม่ให้เสถียรขึ้น
         function playBeepSound() {
             try {
                 unlockAudio();
@@ -97,61 +92,80 @@
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 osc.connect(gain); gain.connect(audioCtx.destination);
-                osc.type = 'sine'; osc.frequency.setValueAtTime(1000, audioCtx.currentTime); // ปรับเสียงให้แหลมชัดขึ้นเป็น 1000Hz
-                gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                osc.type = 'sine'; osc.frequency.setValueAtTime(1200, audioCtx.currentTime); // ความถี่ชัดเจนสำหรับลำโพง iPhone
+                gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
                 osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.08);
-            } catch(e) { console.log("เสียงบล็อก:", e); }
+            } catch(e) { console.log(e); }
         }
 
-        // ฟังก์ชันเปิดกล้องหลัง
+        // ปรับปรุงส่วนเปิดกล้อง: ใช้ Html5QrcodeScanner สำหรับ iOS จะเสถียรที่สุดในการวาดสตรีมวิดีโอ
         function startCamera() {
-            document.getElementById('scan-status').innerText = "⏳ กำลังเปิดกล้องหลัง...";
-            html5Qrcode = new Html5Qrcode("reader");
-            html5Qrcode.start({ facingMode: "environment" }, { fps: 15, qrbox: { width: 250, height: 130 } }, onScanSuccess, () => {})
-            .then(() => {
-                isCameraOpen = true;
-                document.getElementById('cameraToggleBtn').innerText = "🟢 กล้องเปิดอยู่ (คลิกปิด)";
-                document.getElementById('cameraToggleBtn').className = "bg-emerald-500 text-white text-xs px-3 py-1 rounded-full";
-                document.getElementById('scan-status').innerText = "🎯 เล็งบาร์โค้ดให้อยู่ในกรอบได้เลย";
-            }).catch(err => {
-                document.getElementById('scan-status').innerText = "❌ เปิดกล้องไม่สำเร็จ กรุณาลองกดเปิดใหม่อีกครั้ง";
-            });
+            document.getElementById('scan-status').innerText = "⏳ กำลังเปิดกล้องหลัง (iOS รองรับ)...";
+            isProcessing = false;
+
+            // ตั้งค่ากรอบเล็งให้เหมาะกับกล้อง iOS และบังคับใช้กล้องหลัง (environment)
+            html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
+                fps: 10, 
+                qrbox: { width: 260, height: 140 },
+                rememberLastUsedCamera: true,
+                supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
+                videoConstraints: { facingMode: "environment" }
+            }, false);
+
+            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+            
+            isCameraOpen = true;
+            document.getElementById('cameraToggleBtn').innerText = "🟢 กล้องเปิดอยู่ (คลิกปิด)";
+            document.getElementById('cameraToggleBtn').className = "bg-emerald-500 text-white text-xs px-3 py-1 rounded-full";
+            document.getElementById('scan-status').innerText = "🎯 เล็งบาร์โค้ดให้อยู่ในกรอบสี่เหลี่ยม";
         }
 
-        // ฟังก์ชันปิดกล้อง
         function stopCamera() {
-            if (html5Qrcode && isCameraOpen) {
-                html5Qrcode.stop().then(() => {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.clear().then(() => {
                     isCameraOpen = false;
+                    html5QrcodeScanner = null;
                     document.getElementById('reader').innerHTML = "";
-                    document.getElementById('cameraToggleBtn').innerText = "🔴 กล้องปิดอยู่ (คลิกเปิด)";
+                    document.getElementById('cameraToggleBtn').innerText = "🔴 กล้องปิดอยู่ (คลิกเปิดเพื่อสแกน)";
                     document.getElementById('cameraToggleBtn').className = "bg-red-500 text-white text-xs px-3 py-1 rounded-full";
-                }).catch(e => console.log(e));
+                }).catch(err => console.error("ปิดกล้องพลาด:", err));
             }
         }
 
         function toggleCamera() { isCameraOpen ? stopCamera() : startCamera(); }
 
-        // เมื่อกล้องสแกนติดสำเร็จ
-        function onScanSuccess(text) { 
-            playBeepSound(); // 1. เล่นเสียงติ๊ดทันที
-            if (navigator.vibrate) navigator.vibrate([100, 50, 100]); // 2. สั่นมือถือแบบเน้นๆ
+        // เมื่อสแกนติดสำเร็จบน iOS
+        function onScanSuccess(decodedText) { 
+            if (isProcessing) return; // หากกำลังประมวลผลอยู่ ให้ข้ามเฟรมนี้ไป (กันสแกนซ้ำ)
+            isProcessing = true;
+
+            playBeepSound(); // เล่นเสียงติ๊ด
+            if (navigator.vibrate) navigator.vibrate([80, 40, 80]); // สั่น
             
-            stopCamera(); // 3. สั่งปิดกล้องตัดสัญญาณทันที ไม่ให้สแกนต่อซ้ำซ้อน
+            // นำรหัสสินค้าที่ได้ใส่ลงฟอร์มทันที
+            document.getElementById('barcode').value = decodedText; 
+            document.getElementById('scan-status').innerHTML = "✅ สแกนสำเร็จ: <span class='text-blue-600 font-bold'>" + decodedText + "</span>";
             
-            document.getElementById('scan-status').innerHTML = "✅ สแกนติดรหัส: <span class='text-blue-600 font-bold'>" + text + "</span> (กล้องปิดแล้ว)";
-            document.getElementById('barcode').value = text; 
-            fetchProductData(text); 
+            fetchProductData(decodedText); 
+
+            // ปล่อยเวลาให้ระบบ iOS ได้บันทึกค่าเรียบร้อย 0.3 วินาที แล้วค่อยสั่งปิดกล้อง เพื่อไม่ให้แอปค้าง
+            setTimeout(() => {
+                stopCamera(); 
+            }, 300);
         }
 
-        // [ ส่วนที่เหลือ: fetchProductData, addToCart, updateCartUI, clearCart, submitOrder, รายงาน ใช้ของเดิมทั้งหมด ]
-        function fetchProductData(bc) { if(!bc) return; document.getElementById('productName').value = "⏳ กำลังค้นหา..."; fetch(`${WEB_APP_URL}?barcode=${bc}`).then(r=>r.json()).then(d=>{ if(d.found){ document.getElementById('productName').value = d.name; document.getElementById('price').value = d.price; } else { document.getElementById('productName').value = "❌ ไม่พบสินค้าในระบบ (กรอกเองได้)"; } }); }
+        function onScanFailure(error) {
+            // ปล่อยข้ามเฟรมเมื่อกล้องยังไม่เจอบาร์โค้ด (จำเป็นสำหรับ iOS เพื่อไม่ให้สคริปต์หยุดทำงาน)
+        }
+
+        // ส่วนฟังก์ชันจัดการข้อมูลหลัก (ยกชุดความสามารถเดิมมาทำงานต่อได้สมบูรณ์)
+        function fetchProductData(bc) { if(!bc) return; document.getElementById('productName').value = "⏳ กำลังค้นหาใน Sheets..."; fetch(`${WEB_APP_URL}?barcode=${bc}`).then(r=>r.json()).then(d=>{ if(d.found){ document.getElementById('productName').value = d.name; document.getElementById('price').value = d.price; } else { document.getElementById('productName').value = "❌ ไม่พบสินค้าในระบบ (กรอกเองได้)"; } }); }
         function addToCart() { const b = document.getElementById('barcode').value, n = document.getElementById('productName').value, p = parseFloat(document.getElementById('price').value), q = parseInt(document.getElementById('quantity').value); if(!b || !n || isNaN(p)) { alert("กรุณาใส่ข้อมูลให้ครบครับ"); return; } cart.push({barcode:b, name:n, price:p, quantity:q}); updateCartUI(); document.getElementById('barcode').value=""; document.getElementById('productName').value=""; document.getElementById('price').value=""; document.getElementById('scan-status').innerText = "[ กดปุ่มเปิดกล้องเพื่อสแกนชิ้นต่อไป ]"; }
         function updateCartUI() { const list = document.getElementById('cart-list'); let html = "", total = 0; cart.forEach((item, i) => { total += (item.price * item.quantity); html += `<div class="flex justify-between py-1"><span>${item.name} x${item.quantity}</span><span class="font-bold">${(item.price * item.quantity).toFixed(2)} ฿</span></div>`; }); list.innerHTML = cart.length ? html : "<p class='text-slate-400 text-center py-2'>ไม่มีสินค้าในตะกร้า</p>"; document.getElementById('grand-total').innerText = total.toFixed(2) + " ฿"; document.getElementById('checkoutBtn').disabled = !cart.length; document.getElementById('checkoutBtn').className = cart.length ? "w-full bg-emerald-500 text-white font-bold py-3 rounded-xl text-sm shadow" : "w-full bg-slate-400 text-white font-bold py-3 rounded-xl text-sm shadow cursor-not-allowed"; }
         function clearCart() { cart = []; updateCartUI(); }
         function submitOrder() { if(!cart.length) return; const cust = document.getElementById('customerName').value.trim(); const pay = document.getElementById('payment').value; if(pay === "ยังไม่ได้ชำระเงิน" && cust === "ทั่วไป") { alert("⚠️ ถ้าลูกค้ายังไม่จ่ายเงิน กรุณาใส่ชื่อผู้ซื้อด้วยครับ"); return; } document.getElementById('checkoutBtn').disabled = true; document.getElementById('checkoutBtn').innerText = "⏳ กำลังบันทึก..."; fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ payment: pay, customer: cust, items: cart }) }).then(() => { alert("🎉 บันทึกสำเร็จ!"); clearCart(); document.getElementById('customerName').value = "ทั่วไป"; }).finally(() => { document.getElementById('checkoutBtn').innerText = "🛍️ ยืนยันการขาย (ส่งเข้า Google Sheet)"; }); }
-        function openHistoryModal() { showModal("📊 ประวัติยอดขายรายวัน", "⏳ กำลังโหลด..."); fetch(`${WEB_APP_URL}?action=getHistory`).then(r=>r.json()).then(data => { const grouped = {}; data.forEach(i => { if(!grouped[i.date]) grouped[i.date] = {items:[], total:0}; grouped[i.date].items.push(i); grouped[i.date].total += i.total; }); let html = ""; for(const d in grouped) { html += `<div class="bg-slate-50 border p-3 rounded-xl mb-2"><div class="flex justify-between font-bold border-b pb-1 text-slate-700"><span>📅 ${d}</span><span class="text-blue-600">รวม: ${grouped[d].total.toFixed(2)} ฿</span></div>`; grouped[d].items.forEach(i => { html += `<div class="flex justify-between py-1 text-slate-500"><span>[${i.time}] ${i.name} (${i.customer})</span><span>${i.total.toFixed(2)} ฿ (${i.payment})</span></div>`; }); html += `</div>`; } document.getElementById('modalContent').innerHTML = html || "ไม่มีข้อมูล"; }); }
+        function openHistoryModal() { showModal("📊 ประวัติยอดขายรายวัน", "⏳ กำลังโหลด..."); fetch(`${WEB_APP_URL}?action=getHistory`).then(r=>r.json()).then(data => { const grouped = {}; data.forEach(i => { if(!grouped[i.date]) grouped[i.date] = {items:[], total:0}; grouped[i.date].items.push(i); grouped[i.date].total += i.total; }); let html = ""; for(const d in grouped) { html += `<div class="bg-slate-50 border p-3 rounded-xl mb-2"><div class="flex justify-between font-bold border-b pb-1 text-slate-700"><span>📅 ${d}</span><span class="text-blue-600">รวม: ${grouped[d].total.toFixed(2)} ฿</span></div><div class="divide-y divide-slate-100 max-h-32 overflow-y-auto">`; grouped[d].items.forEach(i => { html += `<div class="flex justify-between py-1 text-slate-500"><span>[${i.time}] ${i.name} (${i.customer})</span><span>${i.total.toFixed(2)} ฿ (${i.payment})</span></div>`; }); html += `</div></div>`; } document.getElementById('modalContent').innerHTML = html || "ไม่มีข้อมูล"; }); }
         function openUnpaidModal() { showModal("🚨 รายชื่อลูกค้าค้างชำระเงิน", "⏳ กำลังโหลด..."); fetch(`${WEB_APP_URL}?action=getHistory`).then(r=>r.json()).then(data => { const unpaid = data.filter(i => i.payment === "ยังไม่ได้ชำระเงิน"); const debts = {}; unpaid.forEach(i => { if(!debts[i.customer]) debts[i.customer] = {total:0, list:[]}; debts[i.customer].total += i.total; debts[i.customer].list.push(i); }); let html = ""; for(const c in debts) { html += `<div class="bg-red-50 border border-red-200 p-3 rounded-xl mb-2"><div class="flex justify-between font-bold text-red-800 border-b border-red-100 pb-1"><span>👤 คุณ ${c}</span><span>ยอดค้าง: ${debts[c].total.toFixed(2)} ฿</span></div><div class="text-[11px] text-slate-500 pt-1">`; debts[c].list.forEach(i => { html += `<div>• ${i.date} - ${i.name} (${i.total} ฿)</div>`; }); html += `</div></div>`; } document.getElementById('modalContent').innerHTML = html || "🎉 ไม่มีลูกค้าค้างชำระเงิน"; }); }
         function showModal(title, text) { document.getElementById('reportModal').classList.remove('hidden'); document.getElementById('modalTitle').innerText = title; document.getElementById('modalContent').innerHTML = text; }
         function closeModal() { document.getElementById('reportModal').classList.add('hidden'); }
