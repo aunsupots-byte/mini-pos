@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Premium POS Mobile - Master Edition</title>
+    <title>Premium POS Mobile - Daily Sales Summary Only</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
@@ -129,82 +129,52 @@
         function clearCart() { cart = []; updateCartUI(); }
         function submitOrder() { if(!cart.length) return; const cust = document.getElementById('customerName').value.trim(); const pay = document.getElementById('payment').value; if(pay === "ยังไม่ได้ชำระเงิน" && cust === "ทั่วไป") { showSuccessToast("กรุณาใส่ชื่อคนค้างจ่าย!", true); return; } document.getElementById('checkoutBtn').disabled = true; document.getElementById('checkoutBtn').innerText = "⏳ กำลังบันทึกธุรกรรม..."; fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ payment: pay, customer: cust, items: cart }) }).then(() => { showSuccessToast("🎉 บันทึกเข้า Google Sheet สำเร็จ!"); clearCart(); document.getElementById('customerName').value = "ทั่วไป"; }).finally(() => { document.getElementById('checkoutBtn').innerText = "🚀 ยืนยันการขาย (บันทึกข้อมูล)"; updateCartUI(); }); }
         
-        // 🔥 ฟังก์ชันหน้าต่างป๊อปอัพฟอร์มเพิ่มสินค้าใหม่เข้าคลัง Sheets
         function openAddProductModal() {
-            let html = `
-                <div class="space-y-4 p-1 text-slate-700">
-                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wide">📦 แบบฟอร์มเพิ่มสินค้าใหม่เข้าฐานข้อมูล</p>
-                    <div class="space-y-3">
-                        <div>
-                            <label class="block text-[11px] font-bold text-slate-500 mb-1">เลขบาร์โค้ด / รหัสสินค้า</label>
-                            <input type="text" id="newPBarcode" class="w-full p-3 border border-slate-200 rounded-xl font-mono font-bold text-sm bg-slate-50 focus:bg-white focus:outline-none focus:border-indigo-500" placeholder="พิมพ์หรือสแกนรหัสที่นี่">
-                        </div>
-                        <div>
-                            <label class="block text-[11px] font-bold text-slate-500 mb-1">ชื่อรายการสินค้า</label>
-                            <input type="text" id="newPName" class="w-full p-3 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500" placeholder="เช่น นมจืดตราหมี 200ml">
-                        </div>
-                        <div>
-                            <label class="block text-[11px] font-bold text-slate-500 mb-1">ราคาตั้งขายต่อชิ้น (บาท)</label>
-                            <input type="number" id="newPPrice" class="w-full p-3 border border-slate-200 rounded-xl font-bold text-indigo-600 focus:outline-none focus:border-indigo-500" placeholder="0.00">
-                        </div>
-                    </div>
-                    <button onclick="submitNewProduct()" id="saveProductBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-md transition active:scale-95">
-                        💾 บันทึกสินค้าลงคลังแผ่นงาน
-                    </button>
-                </div>
-            `;
+            let html = `<div class="space-y-4 p-1 text-slate-700"><p class="text-xs font-bold text-slate-400 uppercase tracking-wide">📦 แบบฟอร์มเพิ่มสินค้าใหม่เข้าฐานข้อมูล</p><div class="space-y-3"><div><label class="block text-[11px] font-bold text-slate-500 mb-1">เลขบาร์โค้ด / รหัสสินค้า</label><input type="text" id="newPBarcode" class="w-full p-3 border border-slate-200 rounded-xl font-mono font-bold text-sm bg-slate-50 focus:bg-white focus:outline-none focus:border-indigo-500" placeholder="พิมพ์หรือสแกนรหัสที่นี่"></div><div><label class="block text-[11px] font-bold text-slate-500 mb-1">ชื่อรายการสินค้า</label><input type="text" id="newPName" class="w-full p-3 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500" placeholder="เช่น นมจืดตราหมี 200ml"></div><div><label class="block text-[11px] font-bold text-slate-500 mb-1">ราคาตั้งขายต่อชิ้น (บาท)</label><input type="number" id="newPPrice" class="w-full p-3 border border-slate-200 rounded-xl font-bold text-indigo-600 focus:outline-none focus:border-indigo-500" placeholder="0.00"></div></div><button onclick="submitNewProduct()" id="saveProductBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-md transition active:scale-95">💾 บันทึกสินค้าลงคลังแผ่นงาน</button></div>`;
             showModal("📦 เพิ่มรายการสินค้าใหม่", html);
         }
 
-        // ฟังก์ชันยิงข้อมูลไปบันทึกที่ Sheet Products
         function submitNewProduct() {
-            const barcode = document.getElementById('newPBarcode').value.trim();
-            const name = document.getElementById('newPName').value.trim();
-            const price = document.getElementById('newPPrice').value.trim();
-
-            if(!barcode || !name || !price || isNaN(price)) {
-                alert("🚨 กรุณากรอกข้อมูลสินค้าให้ครบถ้วนและถูกต้องครับ!");
-                return;
-            }
-
-            document.getElementById('saveProductBtn').disabled = true;
-            document.getElementById('saveProductBtn').innerText = "⏳ กำลังเชื่อมต่อแผ่นงาน...";
-            showSuccessToast("⏳ กำลังเพิ่มสินค้าเข้าคลัง...");
-
-            // แปลงข้อมูลเป็น URLSearchParams ป้องกันบั๊ก CORS ข้ามเว็บ
-            const productData = new URLSearchParams();
-            productData.append('action', 'addNewProduct');
-            productData.append('barcode', barcode);
-            productData.append('name', name);
-            productData.append('price', price);
-
-            fetch(WEB_APP_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: productData.toString(),
-                mode: 'no-cors'
-            })
-            .then(() => {
-                showSuccessToast("🎉 เพิ่มสินค้าลง Sheets เรียบร้อย!");
-                closeModal(); // ปิดป๊อปอัพฟอร์ม
-            })
-            .catch(() => showSuccessToast("เกิดข้อผิดพลาดเครือข่าย", true))
-            .finally(() => {
-                document.getElementById('saveProductBtn').disabled = false;
-                document.getElementById('saveProductBtn').innerText = "💾 บันทึกสินค้าลงคลังแผ่นงาน";
-            });
+            const barcode = document.getElementById('newPBarcode').value.trim(), name = document.getElementById('newPName').value.trim(), price = document.getElementById('newPPrice').value.trim();
+            if(!barcode || !name || !price || isNaN(price)) { alert("🚨 กรุณากรอกข้อมูลสินค้าให้ครบถ้วน!"); return; }
+            document.getElementById('saveProductBtn').disabled = true; document.getElementById('saveProductBtn').innerText = "⏳ กำลังเชื่อมต่อแผ่นงาน..."; showSuccessToast("⏳ กำลังเพิ่มสินค้าเข้าคลัง...");
+            const productData = new URLSearchParams(); productData.append('action', 'addNewProduct'); productData.append('barcode', barcode); productData.append('name', name); productData.append('price', price);
+            fetch(WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: productData.toString(), mode: 'no-cors' }).then(() => { showSuccessToast("🎉 เพิ่มสินค้าลง Sheets เรียบร้อย!"); closeModal(); }).finally(() => { document.getElementById('saveProductBtn').disabled = false; document.getElementById('saveProductBtn').innerText = "💾 บันทึกสินค้าลงคลังแผ่นงาน"; });
         }
 
+        // 🔥 อัปเดต: หน้าต่างรายงานสรุปยอดขาย (แสดงผลเฉพาะวันที่ และยอดเงินรวมของวันนั้นๆ ไม่โชว์รายชื่อสินค้า)
         function openHistoryModal() { 
-            showModal("📊 รายงานสรุปยอดขายรายวัน", "<p class='text-center py-4 text-slate-400 animate-pulse'>⏳ กำลังเชื่อมโยงฐานข้อมูลแผ่นงาน...</p>"); 
+            showModal("📊 รายงานสรุปยอดขายรายวัน", "<p class='text-center py-4 text-slate-400 animate-pulse'>⏳ กำลังรวบรวมบัญชีรายวันจากแผ่นงาน...</p>"); 
             fetch(`${WEB_APP_URL}?action=getHistory&_t=${Date.now()}`).then(r=>r.json()).then(data => { 
-                const grouped = {}; data.forEach(i => { if(!grouped[i.date]) grouped[i.date] = {items:[], total:0}; grouped[i.date].items.push(i); grouped[i.date].total += i.total; }); 
-                let html = ""; for(const d in grouped) { 
-                    html += `<div class="bg-slate-50 border border-slate-200/60 p-3 rounded-xl mb-2 shadow-sm"><div class="flex justify-between font-bold border-b border-slate-200/50 pb-1.5 text-slate-700 text-xs"><span>📅 วันที่: ${d}</span><span class="text-indigo-600">รวม: ${grouped[d].total.toFixed(2)} ฿</span></div><div class="divide-y divide-slate-100 max-h-[50vh] overflow-y-auto pr-1">`; 
-                    grouped[d].items.forEach(i => { html += `<div class="flex justify-between py-2 text-slate-600 text-[11px] items-center"><span>[${i.time}] ${i.name} (${i.customer})</span><span class="font-bold text-slate-700">${i.total.toFixed(2)} ฿ <span class="font-normal text-[10px] ${i.payment === 'ยังไม่ได้ชำระเงิน' ? 'text-rose-500 font-bold' : 'text-emerald-600'}">(${i.payment})</span></span></div>`; }); 
-                    html += `</div></div>`; 
+                const grouped = {}; 
+                // ทำการรวมกลุ่มและบวกยอดเงินของแต่ละวันที่
+                data.forEach(i => { 
+                    if(!grouped[i.date]) grouped[i.date] = 0; 
+                    grouped[i.date] += i.total; 
+                }); 
+                
+                let html = '<div class="space-y-2.5 max-h-[75vh] overflow-y-auto pr-1">'; 
+                let countDays = 0;
+                
+                for(const d in grouped) { 
+                    countDays++;
+                    // ดีไซน์การ์ดสรุปยอดเงินรายวันสั้นๆ คลีนๆ สบายตา
+                    html += `
+                        <div class="bg-white border border-slate-200/80 p-4 rounded-xl shadow-sm flex justify-between items-center transition-all">
+                            <div class="flex items-center space-x-2.5">
+                                <span class="text-base">📅</span>
+                                <span class="font-bold text-slate-700 text-xs sm:text-sm">${d}</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs text-slate-400 block font-medium">ยอดขายรวม</span>
+                                <span class="font-black text-indigo-600 text-sm sm:text-base">${grouped[d].toFixed(2)} ฿</span>
+                            </div>
+                        </div>
+                    `; 
                 } 
-                document.getElementById('modalContent').innerHTML = html || "ไม่มีข้อมูลประวัติการขาย"; 
+                html += '</div>';
+                
+                document.getElementById('modalContent').innerHTML = countDays > 0 ? html : "<p class='text-slate-400 text-center py-6'>ไม่มีข้อมูลประวัติยอดขายในคลัง</p>"; 
             }); 
         }
 
@@ -213,21 +183,10 @@
             fetch(`${WEB_APP_URL}?action=getHistory&_t=${Date.now()}`).then(r=>r.json()).then(data => {
                 const unpaid = data.filter(i => i.payment === "ยังไม่ได้ชำระเงิน"); 
                 const debts = {}; unpaid.forEach(i => { if(!debts[i.customer]) debts[i.customer] = {total:0, list:[]}; debts[i.customer].total += i.total; debts[i.customer].list.push(i); }); 
-                
                 let html = ""; let customerIndex = 0;
                 for(const c in debts) { 
                     customerIndex++;
-                    html += `
-                        <div id="debt-box-${customerIndex}" class="bg-rose-50/70 border border-rose-100 p-3 rounded-xl mb-3 transition-all duration-300">
-                            <div class="flex justify-between items-center border-b border-rose-100 pb-2 text-xs font-bold text-rose-900">
-                                <div class="flex flex-col">
-                                    <span>👤 คุณ ${c}</span>
-                                    <span class="text-[10px] text-rose-500 font-normal">ยอดรวมค้าง: ${debts[c].total.toFixed(2)} ฿</span>
-                                </div>
-                                <button onclick="clearAllCustomerDebt('${c}', ${customerIndex})" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-sm active:scale-95 transition">💸 จ่ายเงินครบแล้ว</button>
-                            </div>
-                            <div class="text-[10px] text-slate-500 pt-2 space-y-1.5 max-h-[50vh] overflow-y-auto">
-                    `; 
+                    html += `<div id="debt-box-${customerIndex}" class="bg-rose-50/70 border border-rose-100 p-3 rounded-xl mb-3 transition-all duration-300"><div class="flex justify-between items-center border-b border-rose-100 pb-2 text-xs font-bold text-rose-900"><div class="flex flex-col"><span>👤 คุณ ${c}</span><span class="text-[10px] text-rose-500 font-normal">ยอดรวมค้าง: ${debts[c].total.toFixed(2)} ฿</span></div><button onclick="clearAllCustomerDebt('${c}', ${customerIndex})" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-sm active:scale-95 transition">💸 จ่ายเงินครบแล้ว</button></div><div class="text-[10px] text-slate-500 pt-2 space-y-1.5 max-h-[50vh] overflow-y-auto">`; 
                     debts[c].list.forEach(i => { html += `<div class="flex justify-between items-center bg-white/60 p-2 rounded border border-slate-100 shadow-sm"><span>• ${i.name} (x${i.quantity})</span><span class="font-mono font-bold text-slate-700">${i.total.toFixed(2)} ฿</span></div>`; }); 
                     html += `</div></div>`; 
                 } 
