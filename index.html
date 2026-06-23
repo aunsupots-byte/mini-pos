@@ -247,22 +247,31 @@
             if (html5Qrcode) { try { await html5Qrcode.stop(); } catch(e) {} try { html5Qrcode.clear(); } catch(e) {} }
             html5Qrcode = new Html5Qrcode("reader", false);
 
-            // ลำดับการลองเปิดกล้อง: เลือกกล้องหลังจากรายชื่อกล้องจริงก่อน (แม่นยำสุด)
-            // แล้วค่อย fallback ไปใช้ facingMode แบบไม่บังคับ (ideal) เพื่อให้ใช้ได้แม้ในอุปกรณ์ที่ไม่มีกล้องหลัง
-            // เช่น โน้ตบุ๊ก/เดสก์ท็อปที่มีกล้องเดียว และปิดท้ายด้วย "true" เพื่อรับกล้องอะไรก็ได้ที่เจอ
+            // ลำดับการลองเปิดกล้อง (สำคัญที่สุดก่อน):
+            // 1) บังคับกล้องหลังตรง ๆ ด้วย facingMode "exact: environment" ก่อนเลย เพราะนี่คือวิธีที่เบราว์เซอร์มือถือ
+            //    (Chrome/Safari บน Android และ iOS) เข้าใจและสลับไปกล้องหลังตัวจริงได้แม่นยำที่สุด
+            // 2) ถ้าไม่ได้ (เช่นอุปกรณ์ไม่มีกล้องหลัง หรือเบราว์เซอร์ในแอปบางตัวไม่รองรับ exact) ค่อยดึงรายชื่อกล้องจริง
+            //    มาเลือกตัวที่ label บอกว่าเป็นกล้องหลัง โดยตัดเลนส์ ultra-wide/tele/macro ออกก่อน เพราะมักโฟกัสบาร์โค้ดยากกว่าเลนส์หลัก
+            // 3) ลอง ideal: environment (ขอแบบไม่บังคับ) แล้วค่อยลองกล้องที่เหลือทั้งหมด ปิดท้ายด้วยกล้องหน้า/กล้องอะไรก็ได้
+            //    เพื่อให้ใช้งานได้แม้บนโน้ตบุ๊ก/เดสก์ท็อปที่มีกล้องเดียว
             let attempts = [];
-            try {
-                const cameras = await Html5Qrcode.getCameras();
-                if (cameras && cameras.length) {
-                    const back = cameras.find(c => /back|rear|environment/i.test(c.label || ""));
-                    const preferred = back ? back.id : cameras[cameras.length - 1].id;
-                    attempts.push({ deviceId: { exact: preferred } });
-                    if (cameras.length > 1) {
-                        cameras.forEach(c => { if (c.id !== preferred) attempts.push({ deviceId: { exact: c.id } }); });
-                    }
-                }
-            } catch(e) { /* ไม่สามารถดึงรายชื่อกล้องได้ (ยังไม่อนุญาต) จะลองด้วย facingMode ต่อไป */ }
+            let cameras = [];
+            try { cameras = await Html5Qrcode.getCameras(); } catch(e) { /* ยังไม่ได้รับอนุญาต จะลองขอผ่าน facingMode ต่อไป */ }
+
+            attempts.push({ facingMode: { exact: "environment" } });
+
+            if (cameras && cameras.length) {
+                const backCams = cameras.filter(c => /back|rear|environment/i.test(c.label || ""));
+                const mainBack = backCams.find(c => !/ultra|wide angle|tele|macro/i.test(c.label || "")) || backCams[0];
+                if (mainBack) attempts.push({ deviceId: { exact: mainBack.id } });
+                backCams.forEach(c => { if (c !== mainBack) attempts.push({ deviceId: { exact: c.id } }); });
+                if (!backCams.length) { attempts.push({ deviceId: { exact: cameras[cameras.length - 1].id } }); }
+            }
+
             attempts.push({ facingMode: { ideal: "environment" } });
+
+            if (cameras && cameras.length) { cameras.forEach(c => attempts.push({ deviceId: { exact: c.id } })); }
+
             attempts.push({ facingMode: "user" });
             attempts.push(true);
 
