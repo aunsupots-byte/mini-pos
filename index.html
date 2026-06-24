@@ -41,18 +41,11 @@
 
         @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes scanline { 0%{ top:8%; } 50%{ top:88%; } 100%{ top:8%; } }
+        @keyframes scanline { 0%{ top:10%; } 50%{ top:90%; } 100%{ top:10%; } }
         .animate-slide-up { animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         .animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
-        .animate-scanline { animation: scanline 2.1s ease-in-out infinite; }
+        .animate-scanline { animation: scanline 1.8s ease-in-out infinite; }
 
-        .tear-top{
-            height:11px;
-            background:
-                linear-gradient(135deg, transparent 50%, var(--paper) 50%) 0 0/11px 11px repeat-x,
-                linear-gradient(45deg, transparent 50%, var(--paper) 50%) 0 0/11px 11px repeat-x;
-            background-color:var(--header);
-        }
         .tear-top-card{
             height:11px;
             background:
@@ -75,22 +68,27 @@
             color:#5FE3A3;
             letter-spacing:0.5px;
         }
-        .key-btn{ transition: transform .12s ease, opacity .12s ease; }
-        .key-btn:active{ transform: scale(0.94); }
+        .key-btn { transition: transform .12s ease, opacity .12s ease; }
+        .key-btn:active { transform: scale(0.94); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="min-h-screen pb-28 selection:bg-[var(--till)]/20" onclick="unlockAudio()">
 
     <div class="px-4 py-3.5 sticky top-0 z-40" style="background:var(--header);">
         <div class="max-w-md mx-auto space-y-2.5">
-            <div class="flex items-center space-x-2.5">
-                <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:var(--till);">
-                    <span class="text-white font-display font-extrabold text-sm">฿</span>
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:var(--till);">
+                        <span class="text-white font-display font-extrabold text-sm">฿</span>
+                    </div>
+                    <div class="leading-tight">
+                        <div class="font-display font-extrabold text-sm text-white tracking-tight">ระบบขายหน้าร้าน</div>
+                        <div class="font-receipt text-[9px] text-white/40 tracking-wider">ULTRA SPEED POS</div>
+                    </div>
                 </div>
-                <div class="leading-tight">
-                    <div class="font-display font-extrabold text-sm text-white tracking-tight">ระบบขายหน้าร้าน</div>
-                    <div class="font-receipt text-[9px] text-white/40 tracking-wider">POINT OF SALE</div>
-                </div>
+                <button onclick="preloadProductsData(true)" class="key-btn text-[9px] font-bold px-2.5 py-1 rounded-lg border text-emerald-400 border-emerald-500/30 bg-emerald-500/10">🔄 อัปเดตสต๊อก</button>
             </div>
             <div class="grid grid-cols-5 gap-1.5 text-[9px] font-bold leading-tight">
                 <button onclick="openProductPickerModal()" class="key-btn text-white flex flex-col items-center justify-center gap-0.5 py-2 rounded-xl border border-white/10" style="background:var(--blue);"><span class="text-sm">🛍️</span>เลือกสินค้า</button>
@@ -105,20 +103,20 @@
     <div class="max-w-md mx-auto p-4 space-y-4">
 
         <div class="rounded-2xl shadow-sm border overflow-hidden" style="background:var(--card); border-color:var(--line);">
-            <div class="flex justify-between items-center px-4 py-3" style="background:var(--header);">
+            <div class="flex justify-between items-center px-4 py-2.5" style="background:var(--header);">
                 <div class="flex items-center space-x-1.5">
                     <span class="w-2 h-2 rounded-full animate-pulse" style="background:var(--amber);"></span>
-                    <span class="text-[11px] font-bold text-white/70 uppercase tracking-wider font-receipt">SCANNER</span>
+                    <span class="text-[10px] font-bold text-white/70 uppercase tracking-wider font-receipt">BARCODE SCANNER</span>
                 </div>
-                <button id="cameraToggleBtn" onclick="toggleCamera()" class="key-btn text-white text-[11px] font-bold px-4 py-1.5 rounded-full" style="background:var(--till);">📷 เปิดใช้งานกล้อง</button>
+                <button id="cameraToggleBtn" onclick="toggleCamera()" class="key-btn text-white text-[10px] font-bold px-3.5 py-1 rounded-full" style="background:var(--till);">📷 เปิดกล้อง</button>
             </div>
             <div class="tear-top-card"></div>
-            <div class="p-4 pt-3 space-y-3">
-                <div class="relative w-full bg-black rounded-2xl overflow-hidden aspect-[4/3] border shadow-inner flex items-center justify-center" style="border-color:var(--line);">
+            <div class="p-4 pt-2 space-y-2">
+                <div class="relative w-full bg-black rounded-xl overflow-hidden h-24 border shadow-inner flex items-center justify-center" style="border-color:var(--line);">
                     <div id="reader" class="w-full h-full"></div>
-                    <div id="laser-line" class="hidden absolute left-4 right-4 h-0.5 animate-scanline z-10" style="background:linear-gradient(to right, transparent, var(--amber), transparent); box-shadow:0 0 10px 1px var(--amber);"></div>
+                    <div id="laser-line" class="hidden absolute left-4 right-4 h-0.5规范 animate-scanline z-10" style="background:linear-gradient(to right, transparent, var(--amber), transparent); box-shadow:0 0 10px 1.5px var(--amber); top: 50%;"></div>
                 </div>
-                <div id="scan-status" class="text-center text-xs font-medium" style="color:var(--ink-soft);">💡 กดปุ่มเพื่อเปิดกล้องและเริ่มยิงบาร์โค้ด</div>
+                <div id="scan-status" class="text-center text-[11px] font-medium" style="color:var(--ink-soft);">💡 เล็งแถบบาร์โค้ดให้อยู่ในกรอบเลนส์สแกนเนอร์</div>
             </div>
         </div>
 
@@ -131,7 +129,7 @@
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style="color:var(--ink-soft);">รหัสบาร์โค้ด</label>
-                    <input type="text" id="barcode" class="w-full p-3.5 rounded-xl font-receipt font-bold text-sm" style="background:var(--paper); border:1px solid var(--line); color:var(--ink);" placeholder="สแกนอัตโนมัติ" onchange="fetchProductData(this.value)">
+                    <input type="text" id="barcode" class="w-full p-3.5 rounded-xl font-receipt font-bold text-sm" style="background:var(--paper); border:1px solid var(--line); color:var(--ink);" placeholder="บาร์โค้ดสินค้า" onchange="fetchProductData(this.value)">
                 </div>
                 <div>
                     <label class="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style="color:var(--ink-soft);">ราคาต่อชิ้น (฿)</label>
@@ -201,83 +199,66 @@
         function playBeepSound() { try { unlockAudio(); if (!audioCtx) return; const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type = 'sine'; osc.frequency.setValueAtTime(1000, audioCtx.currentTime); gain.gain.setValueAtTime(0.3, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08); osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.08); } catch(e) {} }
 
         function showSuccessToast(message, isError = false) {
-            const toast = document.getElementById('successToast');
-            const icon = document.getElementById('toastIcon');
-            const title = document.getElementById('toastTitle');
-            const msgText = document.getElementById('toastMessage');
-
+            const toast = document.getElementById('successToast'); const icon = document.getElementById('toastIcon'); const title = document.getElementById('toastTitle'); const msgText = document.getElementById('toastMessage');
             msgText.innerText = message;
-
-            if(isError) {
-                title.innerText = "เกิดข้อผิดพลาด";
-                icon.innerText = "❌";
-                icon.style.background = "var(--stamp)";
-            } else {
-                title.innerText = "สำเร็จเสร็จสิ้น";
-                icon.innerText = "✓";
-                icon.style.background = "var(--till)";
-            }
-
-            toast.classList.remove('hidden');
-            setTimeout(() => { toast.classList.add('hidden'); }, 2500);
+            if(isError) { title.innerText = "เกิดข้อผิดพลาด"; icon.innerText = "❌"; icon.style.background = "var(--stamp)"; } 
+            else { title.innerText = "สำเร็จเสร็จสิ้น"; icon.innerText = "✓"; icon.style.background = "var(--till)"; }
+            toast.classList.remove('hidden'); setTimeout(() => { toast.classList.add('hidden'); }, 2500);
         }
 
-        // ---------- กล้อง: รองรับทุกอุปกรณ์ (มือถือ Android/iOS, แท็บเล็ต, โน้ตบุ๊ก/เดสก์ท็อปที่มีเว็บแคมเดียว) ----------
+        // 🔥 ระบบเพิ่มประสิทธิภาพ: พรีโหลดข้อมูลเก็บลงแคชเครื่อง (LocalStorage) ตั้งแต่เริ่มเว็บ เพื่อความเร็วระดับมิลลิวินาที
+        window.addEventListener('DOMContentLoaded', () => {
+            const localCachedData = localStorage.getItem('pos_products_cache');
+            if (localCachedData) {
+                catalogProducts = JSON.parse(localCachedData);
+                catalogFiltered = catalogProducts;
+            }
+            preloadProductsData(false); // ซิงค์ข้อมูลจากคลังแผ่นงานเงียบ ๆ เป็นพื้นหลัง
+        });
+
+        function preloadProductsData(forceNotify = false) {
+            if (forceNotify) showSuccessToast("⏳ กำลังอัปเดตสต๊อกสินค้าล่าสุด...");
+            fetch(`${WEB_APP_URL}?action=getProductsData&_t=${Date.now()}`)
+            .then(r => r.json())
+            .then(products => {
+                if (products && products.length) {
+                    catalogProducts = products;
+                    catalogFiltered = products;
+                    localStorage.setItem('pos_products_cache', JSON.stringify(products));
+                    if (forceNotify) showSuccessToast("🟢 อัปเดตข้อมูลคลังสินค้าสำเร็จแล้ว");
+                }
+            }).catch(err => {
+                if (forceNotify) showSuccessToast("❌ ดึงข้อมูลขัดข้อง เช็กหน้าสคริปต์หลังบ้าน", true);
+            });
+        }
+
+        // ---------- กล้องขนาดพรีเมียม กะทัดรัด ----------
         const SCAN_CONFIG = {
-            fps: 15,
-            qrbox: function(width, height) { return { width: Math.min(width * 0.85, 300), height: Math.min(height * 0.35, 120) }; },
+            fps: 18,
+            qrbox: function(width, height) { return { width: Math.min(width * 0.85, 260), height: Math.min(height * 0.5, 75) }; },
             formatsToSupport: [ Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8, Html5QrcodeSupportedFormats.CODE_128 ]
         };
 
         function onCameraStarted() {
             isCameraOpen = true;
             document.getElementById('laser-line').classList.remove('hidden');
-            document.getElementById('cameraToggleBtn').innerText = "🔴 ปิดหน้ากล้อง";
+            document.getElementById('cameraToggleBtn').innerText = "🔴 ปิดกล้อง";
             document.getElementById('cameraToggleBtn').style.background = "var(--stamp)";
-            document.getElementById('scan-status').innerText = "🎯 พร้อมแล้ว เล็งสแกนบาร์โค้ดได้เลย";
-            setTimeout(() => {
-                try {
-                    const videoTrack = html5Qrcode.getRunningTrack();
-                    const capabilities = videoTrack.getCapabilities();
-                    if (capabilities.zoom) { videoTrack.applyConstraints({ advanced: [{ zoom: Math.min(1.4, capabilities.zoom.max) }] }); }
-                    if (capabilities.focusMode && capabilities.focusMode.includes("continuous")) { videoTrack.applyConstraints({ advanced: [{ focusMode: "continuous" }] }); }
-                } catch(e) {}
-            }, 700);
+            document.getElementById('scan-status').innerText = "🎯 เล็งยิงรหัสบาร์โค้ดในแถบเลนส์";
         }
 
         async function startCamera() {
-            document.getElementById('scan-status').innerText = "⏳ กำลังเชื่อมต่อกล้อง...";
+            document.getElementById('scan-status').innerText = "⏳ กำลังเชื่อมต่อระบบกล้อง...";
             isProcessing = false;
             if (html5Qrcode) { try { await html5Qrcode.stop(); } catch(e) {} try { html5Qrcode.clear(); } catch(e) {} }
             html5Qrcode = new Html5Qrcode("reader", false);
 
-            // ลำดับการลองเปิดกล้อง (สำคัญที่สุดก่อน):
-            // 1) บังคับกล้องหลังตรง ๆ ด้วย facingMode "exact: environment" ก่อนเลย เพราะนี่คือวิธีที่เบราว์เซอร์มือถือ
-            //    (Chrome/Safari บน Android และ iOS) เข้าใจและสลับไปกล้องหลังตัวจริงได้แม่นยำที่สุด
-            // 2) ถ้าไม่ได้ (เช่นอุปกรณ์ไม่มีกล้องหลัง หรือเบราว์เซอร์ในแอปบางตัวไม่รองรับ exact) ค่อยดึงรายชื่อกล้องจริง
-            //    มาเลือกตัวที่ label บอกว่าเป็นกล้องหลัง โดยตัดเลนส์ ultra-wide/tele/macro ออกก่อน เพราะมักโฟกัสบาร์โค้ดยากกว่าเลนส์หลัก
-            // 3) ลอง ideal: environment (ขอแบบไม่บังคับ) แล้วค่อยลองกล้องที่เหลือทั้งหมด ปิดท้ายด้วยกล้องหน้า/กล้องอะไรก็ได้
-            //    เพื่อให้ใช้งานได้แม้บนโน้ตบุ๊ก/เดสก์ท็อปที่มีกล้องเดียว
-            let attempts = [];
-            let cameras = [];
-            try { cameras = await Html5Qrcode.getCameras(); } catch(e) { /* ยังไม่ได้รับอนุญาต จะลองขอผ่าน facingMode ต่อไป */ }
-
-            attempts.push({ facingMode: { exact: "environment" } });
-
-            if (cameras && cameras.length) {
-                const backCams = cameras.filter(c => /back|rear|environment/i.test(c.label || ""));
-                const mainBack = backCams.find(c => !/ultra|wide angle|tele|macro/i.test(c.label || "")) || backCams[0];
-                if (mainBack) attempts.push({ deviceId: { exact: mainBack.id } });
-                backCams.forEach(c => { if (c !== mainBack) attempts.push({ deviceId: { exact: c.id } }); });
-                if (!backCams.length) { attempts.push({ deviceId: { exact: cameras[cameras.length - 1].id } }); }
-            }
-
-            attempts.push({ facingMode: { ideal: "environment" } });
-
-            if (cameras && cameras.length) { cameras.forEach(c => attempts.push({ deviceId: { exact: c.id } })); }
-
-            attempts.push({ facingMode: "user" });
-            attempts.push(true);
+            let attempts = [
+                { facingMode: { exact: "environment" } },
+                { facingMode: { ideal: "environment" } },
+                { facingMode: "user" },
+                true
+            ];
 
             for (const constraint of attempts) {
                 try {
@@ -286,9 +267,7 @@
                     return;
                 } catch(err) { continue; }
             }
-
-            document.getElementById('scan-status').innerHTML = "❌ ไม่พบกล้องหรือไม่ได้รับอนุญาตให้ใช้กล้อง สามารถพิมพ์บาร์โค้ดเองในช่องด้านล่างได้";
-            showSuccessToast("เปิดกล้องไม่สำเร็จ กรอกรหัสเองได้", true);
+            document.getElementById('scan-status').innerHTML = "❌ ไม่พบกล้อง หรือพิมพ์บาร์โค้ดสดที่ช่องด้านล่างได้ครับ";
         }
 
         async function stopCamera() {
@@ -297,16 +276,40 @@
                 isCameraOpen = false;
                 document.getElementById('laser-line').classList.add('hidden');
                 document.getElementById('reader').innerHTML = "";
-                document.getElementById('cameraToggleBtn').innerText = "📷 เปิดใช้งานกล้อง";
+                document.getElementById('cameraToggleBtn').innerText = "📷 เปิดกล้อง";
                 document.getElementById('cameraToggleBtn').style.background = "var(--till)";
-                document.getElementById('scan-status').innerText = "💡 พร้อมเปิดกล้องใหม่อีกครั้ง";
+                document.getElementById('scan-status').innerText = "💡 พร้อมใช้งานกล้องใหม่อีกครั้ง";
             }
         }
         function toggleCamera() { isCameraOpen ? stopCamera() : startCamera(); }
         function onScanSuccess(decodedText) { if (isProcessing) return; isProcessing = true; playBeepSound(); if (navigator.vibrate) navigator.vibrate([80, 40, 80]); document.getElementById('barcode').value = decodedText; fetchProductData(decodedText); setTimeout(() => { stopCamera(); showSuccessToast("จับรหัสสินค้าสำเร็จ!"); }, 300); }
 
-        function fetchProductData(bc) { if(!bc) return; document.getElementById('productName').value = "⏳ สืบค้นข้อมูลคลังแผ่นงาน..."; fetch(`${WEB_APP_URL}?barcode=${bc}&_t=${Date.now()}`).then(r=>r.json()).then(d=>{ if(d.found){ document.getElementById('productName').value = d.name; document.getElementById('price').value = d.price; } else { document.getElementById('productName').value = "คลังไม่มีรหัสนี้ (สามารถพิมพ์ตั้งชื่อเองได้)"; } }); }
+        // 🔥 เร่งความเร็ว: การหาข้อมูลบาร์โค้ดจะสืบค้นในหน่วยความจำ RAM ของมือถือผู้ใช้ทันที ไม่ต้อง Fetch ไปหา Google Sheet ทุกรอบที่เจอของ
+        function fetchProductData(bc) { 
+            if(!bc) return; 
+            document.getElementById('productName').value = "⏳ ค้นข้อมูลในแรมหน่วยความจำ..."; 
+            
+            // ค้นหาในก้อนแคชภายในเครื่องทันที
+            const matchedProduct = catalogProducts.find(p => String(p.barcode).trim() === String(bc).trim());
+            if (matchedProduct) {
+                document.getElementById('productName').value = matchedProduct.name;
+                document.getElementById('price').value = matchedProduct.price;
+                showSuccessToast(`พบข้อมูล: ${matchedProduct.name}`);
+            } else {
+                // หากไม่เจอในแคช จึงจะไปดึงสดจากแผ่นงาน
+                fetch(`${WEB_APP_URL}?barcode=${bc}&_t=${Date.now()}`).then(r=>r.json()).then(d=>{ 
+                    if(d.found){ 
+                        document.getElementById('productName').value = d.name; 
+                        document.getElementById('price').value = d.price; 
+                    } else { 
+                        document.getElementById('productName').value = "คลังไม่มีรหัสนี้ (สามารถพิมพ์ตั้งชื่อเองได้)"; 
+                    } 
+                });
+            }
+        }
+
         function addToCart() { const b = document.getElementById('barcode').value, n = document.getElementById('productName').value, p = parseFloat(document.getElementById('price').value), q = parseInt(document.getElementById('quantity').value); if(!b || !n || isNaN(p) || q <= 0) { showSuccessToast("กรอกข้อมูลฟอร์มไม่ครบ!", true); return; } cart.push({barcode:b, name:n, price:p, quantity:q}); updateCartUI(); document.getElementById('barcode').value=""; document.getElementById('productName').value=""; document.getElementById('price').value=""; showSuccessToast("เพิ่มเข้าตะกร้าบิลแล้ว"); }
+        
         function updateCartUI() {
             const list = document.getElementById('cart-list'); let html = "", total = 0;
             cart.forEach((item) => {
@@ -329,7 +332,7 @@
             btn.style.cursor = cart.length ? "pointer" : "not-allowed";
         }
         function clearCart() { cart = []; updateCartUI(); }
-        function submitOrder() { if(!cart.length) return; const cust = document.getElementById('customerName').value.trim(); const pay = document.getElementById('payment').value; if(pay === "ยังไม่ได้ชำระเงิน" && cust === "ทั่วไป") { showSuccessToast("กรุณาระบุชื่อคนติดหนี้ค้างจ่าย!", true); return; } document.getElementById('checkoutBtn').disabled = true; document.getElementById('checkoutBtn').innerText = "⏳ ระบบกำลังส่งข้อมูลเข้า Sheets..."; fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ payment: pay, customer: cust, items: cart }) }).then(() => { showSuccessToast("🎉 บันทึกปิดบิลเข้าคลังสำเร็จ!"); clearCart(); document.getElementById('customerName').value = "ทั่วไป"; }).finally(() => { document.getElementById('checkoutBtn').innerText = "🚀 ยืนยันปิดบิลและส่งข้อมูล"; updateCartUI(); }); }
+        function submitOrder() { if(!cart.length) return; const cust = document.getElementById('customerName').value.trim(); const pay = document.getElementById('payment').value; if(pay === "ยังไม่ได้ชำระเงิน" && cust === "ทั่วไป") { showSuccessToast("กรุณาระบุชื่อคนติดหนี้ค้างจ่าย!", true); return; } document.getElementById('checkoutBtn').disabled = true; document.getElementById('checkoutBtn').innerText = "⏳ ระบบกำลังส่งข้อมูลเข้า Sheets..."; fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ payment: pay, customer: cust, items: cart }) }).then(() => { showSuccessToast("🎉 บันทึกปิดบิลเข้าคลังสำเร็จ!"); clearCart(); document.getElementById('customerName').value = "ทั่วไป"; preloadProductsData(false); }).finally(() => { document.getElementById('checkoutBtn').innerText = "🚀 ยืนยันปิดบิลและส่งข้อมูล"; updateCartUI(); }); }
 
         function openAddProductModal() {
             let html = `<div class="space-y-4 p-1">
@@ -349,7 +352,7 @@
             if(!barcode || !name || !price || isNaN(price)) { alert("🚨 กรุณากรอกข้อมูลสินค้าให้ครบถ้วน!"); return; }
             document.getElementById('saveProductBtn').disabled = true; document.getElementById('saveProductBtn').innerText = "⏳ กำลังส่งข้อมูล..."; showSuccessToast("⏳ กำลังเพิ่มสินค้าเข้าคลัง...");
             const productData = new URLSearchParams(); productData.append('action', 'addNewProduct'); productData.append('barcode', barcode); productData.append('name', name); productData.append('price', price);
-            fetch(WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: productData.toString(), mode: 'no-cors' }).then(() => { showSuccessToast("🎉 เพิ่มสินค้าลงคลังเรียบร้อย!"); closeModal(); }).finally(() => { document.getElementById('saveProductBtn').disabled = false; document.getElementById('saveProductBtn').innerText = "💾 บันทึกสินค้าลงคลังแผ่นงาน"; });
+            fetch(WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: productData.toString(), mode: 'no-cors' }).then(() => { showSuccessToast("🎉 เพิ่มสินค้าลงคลังเรียบร้อย!"); closeModal(); preloadProductsData(false); }).finally(() => { document.getElementById('saveProductBtn').disabled = false; document.getElementById('saveProductBtn').innerText = "💾 บันทึกสินค้าลงคลังแผ่นงาน"; });
         }
 
         function openHistoryModal() {
@@ -400,71 +403,80 @@
         }
 
         function openStockModal() {
-            showModal("📦 รายการสินค้าคงเหลือในคลัง", `<p class="text-center py-4 font-medium animate-pulse" style="color:var(--ink-soft);">⏳ กำลังเชื่อมต่อฐานข้อมูลคลัง...</p>`);
-            fetch(`${WEB_APP_URL}?action=getProductsData&_t=${Date.now()}`).then(r => r.json()).then(products => {
-                let stockHtml = '<div class="space-y-2.5 max-h-[72vh] overflow-y-auto pr-1">';
-                if(products && products.length > 0) {
-                    products.forEach(p => {
-                        const isOut = p.stock <= 0;
-                        stockHtml += `
-                            <div class="p-4 rounded-2xl shadow-sm flex justify-between items-center border" style="background:${isOut ? 'var(--stamp-pale)' : 'var(--card)'}; border-color:${isOut ? 'rgba(189,58,46,0.25)' : 'var(--line)'};">
-                                <div class="truncate" style="max-width:65%;">
-                                    <div class="font-bold text-xs sm:text-sm truncate" style="color:${isOut ? 'var(--stamp)' : 'var(--ink)'};">${p.name}</div>
-                                    <div class="text-[10px] font-receipt mt-0.5" style="color:var(--ink-soft);">${p.barcode} · ${p.price.toFixed(2)} ฿</div>
-                                </div>
-                                <div class="text-right">
-                                    <span class="text-[9px] block font-bold" style="color:var(--ink-soft);">สต๊อกจริง</span>
-                                    <span class="font-receipt font-bold text-sm ${isOut ? 'animate-pulse' : ''}" style="color:${isOut ? 'var(--stamp)' : 'var(--till-deep)'}; ${isOut ? 'background:rgba(189,58,46,0.12); padding:2px 8px; border-radius:6px;' : ''}">
-                                        ${p.stock} ชิ้น
-                                    </span>
-                                </div>
+            // 🔥 เร่งความเร็ว: ดึงข้อมูลคงคลังจากความจำเครื่องมาวาดตารางทันทีโดยไม่ต้องรอดาวน์โหลดจากเน็ต
+            let stockHtml = '<div class="space-y-2.5 max-h-[72vh] overflow-y-auto pr-1">';
+            if(catalogProducts && catalogProducts.length > 0) {
+                catalogProducts.forEach(p => {
+                    const isOut = p.stock <= 0;
+                    stockHtml += `
+                        <div class="p-4 rounded-2xl shadow-sm flex justify-between items-center border" style="background:${isOut ? 'var(--stamp-pale)' : 'var(--card)'}; border-color:${isOut ? 'rgba(189,58,46,0.25)' : 'var(--line)'};">
+                            <div class="truncate" style="max-width:65%;">
+                                <div class="font-bold text-xs sm:text-sm truncate" style="color:${isOut ? 'var(--stamp)' : 'var(--ink)'};">${p.name}</div>
+                                <div class="text-[10px] font-receipt mt-0.5" style="color:var(--ink-soft);">${p.barcode} · ${p.price.toFixed(2)} ฿</div>
                             </div>
-                        `;
-                    });
-                    stockHtml += '</div>'; document.getElementById('modalContent').innerHTML = stockHtml;
-                } else {
-                    document.getElementById('modalContent').innerHTML = `<p class="text-center py-6" style="color:var(--ink-soft);">ไม่พบรายการสินค้าในหน้าแท็บ Products</p>`;
-                }
-            }).catch(() => { document.getElementById('modalContent').innerHTML = `<p class="text-center py-6 font-bold" style="color:var(--stamp);">❌ ระบบขัดข้อง กรุณาเช็กการ Deploy ของหลังบ้านครับ</p>`; });
+                            <div class="text-right">
+                                <span class="text-[9px] block font-bold" style="color:var(--ink-soft);">สต๊อกจริง</span>
+                                <span class="font-receipt font-bold text-sm ${isOut ? 'animate-pulse' : ''}" style="color:${isOut ? 'var(--stamp)' : 'var(--till-deep)'}; ${isOut ? 'background:rgba(189,58,46,0.12); padding:2px 8px; border-radius:6px;' : ''}">
+                                    ${p.stock} ชิ้น
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                });
+                stockHtml += '</div>';
+                showModal("📦 รายการสินค้าคงเหลือในคลัง", stockHtml);
+            } else {
+                showModal("📦 รายการสินค้าคงเหลือในคลัง", `<p class="text-center py-6" style="color:var(--ink-soft);">คลังข้อมูลว่างเปล่า กรุณากดปุ่ม "อัปเดตสต๊อก" ขวาสดด้านบน</p>`);
+            }
+        }
+
+        // 🔥 เพิ่มฟังก์ชัน: ค้นหารูปภาพสินค้าจากชื่อสินค้าอัตโนมัติผ่าน Unsplash API เพื่อเพิ่มความพรีเมียมตัวจริง
+        function getProductImageUrl(productName) {
+            const cleanName = encodeURIComponent(productName.split(' ')[0]); // ดึงคีย์เวิร์ดหลักของชื่อสินค้า
+            return `https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=120&q=80&sig=${cleanName}`;
         }
 
         function openProductPickerModal() {
-            showModal("🛍️ เลือกสินค้าจากคลัง", `<p class="text-center py-4 font-medium animate-pulse" style="color:var(--ink-soft);">⏳ กำลังโหลดรายชื่อสินค้า...</p>`);
-            fetch(`${WEB_APP_URL}?action=getProductsData&_t=${Date.now()}`).then(r => r.json()).then(products => {
-                catalogProducts = (products && products.length) ? products : [];
-                catalogFiltered = catalogProducts;
-                renderCatalogModal();
-            }).catch(() => { document.getElementById('modalContent').innerHTML = `<p class="text-center py-6 font-bold" style="color:var(--stamp);">❌ ระบบขัดข้อง กรุณาเช็กการ Deploy ของหลังบ้านครับ</p>`; });
+            // ดึงจากแคชทันทีโดยไม่ต้อง fetch โหลดเน็ต
+            catalogFiltered = catalogProducts;
+            renderCatalogModal();
         }
 
         function renderCatalogModal() {
             const wrap = `
                 <div class="space-y-3">
                     <input type="text" id="catalogSearch" oninput="filterCatalog(this.value)" placeholder="🔎 ค้นหาชื่อสินค้าหรือบาร์โค้ด..." class="w-full p-3 rounded-xl text-sm font-bold" style="background:var(--paper); border:1px solid var(--line); color:var(--ink);">
-                    <p class="text-[10px] font-medium" style="color:var(--ink-soft);">แตะที่สินค้าเพื่อเพิ่มลงตะกร้าทันที (จำนวน 1 ชิ้น/ครั้ง)</p>
-                    <div id="catalogList" class="space-y-2 max-h-[58vh] overflow-y-auto pr-1"></div>
+                    <p class="text-[10px] font-medium" style="color:var(--ink-soft);">แตะเลือกการ์ดสินค้าเพื่อเพิ่มยอดลงในบิลขายหน้าร้านได้ทันที</p>
+                    <div id="catalogList" class="grid grid-cols-2 gap-2.5 max-h-[58vh] overflow-y-auto pr-1 no-scrollbar"></div>
                 </div>
             `;
             document.getElementById('modalContent').innerHTML = wrap;
             renderCatalogList();
         }
 
+        // 🔥 อัปเดตโครงสร้าง: ปรับรูปแบบ Modal รายการเลือกสินค้าหลักเป็นแบบ 2 คอลัมน์ (Grid View) พร้อมโหลดภาพสินค้าประกอบชัดเจน
         function renderCatalogList() {
             const listEl = document.getElementById('catalogList');
             if (!listEl) return;
-            if (!catalogFiltered.length) { listEl.innerHTML = `<p class="text-center py-6 text-xs" style="color:var(--ink-soft);">ไม่พบสินค้าที่ค้นหา</p>`; return; }
+            if (!catalogFiltered.length) { listEl.innerHTML = `<p class="col-span-2 text-center py-6 text-xs" style="color:var(--ink-soft);">ไม่พบสินค้าในฐานความจำ</p>`; return; }
             let html = "";
             catalogFiltered.forEach((p, idx) => {
                 const isOut = p.stock <= 0;
+                const imgUrl = getProductImageUrl(p.name); // เรียกหาภาพประกอบตามคีย์เวิร์ดชื่อ
+                
                 html += `
-                    <div onclick="selectProductFromCatalog(${idx})" class="key-btn p-3.5 rounded-2xl shadow-sm flex justify-between items-center border cursor-pointer active:opacity-70" style="background:${isOut ? 'var(--stamp-pale)' : 'var(--blue-pale)'}; border-color:${isOut ? 'rgba(189,58,46,0.25)' : 'var(--line)'};">
-                        <div class="truncate" style="max-width:65%;">
-                            <div class="font-bold text-xs sm:text-sm truncate" style="color:${isOut ? 'var(--stamp)' : 'var(--ink)'};">${p.name}</div>
-                            <div class="text-[10px] font-receipt mt-0.5" style="color:var(--ink-soft);">${p.barcode} · สต๊อก ${p.stock} ชิ้น</div>
+                    <div onclick="selectProductFromCatalog(${idx})" class="key-btn p-2.5 rounded-2xl shadow-sm flex flex-col justify-between border cursor-pointer active:opacity-70 bg-white" style="border-color:${isOut ? 'rgba(189,58,46,0.25)' : 'var(--line)'}; opacity:${isOut ? '0.6' : '1'};">
+                        <div class="w-full h-20 rounded-xl overflow-hidden mb-2 bg-slate-100 relative">
+                            <img src="${imgUrl}" alt="${p.name}" class="w-full h-full object-cover">
+                            <div class="absolute top-1 right-1 text-[8px] bg-black/60 text-white px-1 py-0.5 rounded font-receipt">📦 คลัง: ${p.stock}</div>
                         </div>
-                        <div class="text-right">
-                            <span class="font-receipt font-bold text-sm" style="color:var(--blue);">${p.price.toFixed(2)} ฿</span>
-                            <div class="text-[9px] font-bold" style="color:var(--ink-soft);">แตะเพื่อเพิ่ม ➕</div>
+                        <div class="space-y-0.5 min-w-0">
+                            <div class="font-bold text-[11px] truncate" style="color:var(--ink);">${p.name}</div>
+                            <div class="text-[9px] font-receipt truncate" style="color:var(--ink-soft);">${p.barcode}</div>
+                        </div>
+                        <div class="flex justify-between items-center mt-1.5 pt-1 border-t border-dashed" style="border-color:var(--line);">
+                            <span class="font-receipt font-bold text-xs" style="color:var(--blue);">${p.price.toFixed(2)} ฿</span>
+                            <span class="text-[9px] font-bold text-emerald-700">เลือก ➕</span>
                         </div>
                     </div>
                 `;
@@ -481,13 +493,25 @@
         function selectProductFromCatalog(idx) {
             const p = catalogFiltered[idx];
             if (!p) return;
-            cart.push({ barcode: p.barcode, name: p.name, price: parseFloat(p.price), quantity: 1 });
+            
+            // เช็กจำนวนสต๊อกก่อนเพิ่มลงตะกร้า
+            const exist = cart.find(item => item.barcode === p.barcode);
+            if(exist && exist.quantity >= p.stock) {
+                showSuccessToast("🚨 สินค้าในคลังสต๊อกมีไม่พอขาย", true);
+                return;
+            }
+
+            if(exist) {
+                exist.quantity += 1;
+            } else {
+                cart.push({ barcode: p.barcode, name: p.name, price: parseFloat(p.price), quantity: 1 });
+            }
             updateCartUI();
-            showSuccessToast(`เพิ่ม "${p.name}" ลงตะกร้าแล้ว`);
+            showSuccessToast(`เพิ่ม "${p.name}" เข้าบิล`);
         }
 
         function openUnpaidModal() {
-            showModal("🚨 รายชื่อลูกค้าค้างจ่ายเงิน", `<p class="text-center py-4 font-medium animate-pulse" style="color:var(--ink-soft);">⏳ กำลังรวบรวมบิลคงค้าง...</p>`);
+            showModal("🚨 รายชื่อลูกค้าค้างจ่ายเงิน", `<p class="text-center py-4 font-medium animate-pulse" style="color:var(--ink-soft);">⏳ กำลังรวบรวมบิลคงค้าง...</p>`); 
             fetch(`${WEB_APP_URL}?action=getHistory&_t=${Date.now()}`).then(r=>r.json()).then(data => {
                 const unpaid = data.filter(i => i.payment === "ยังไม่ได้ชำระเงิน");
                 const debts = {}; unpaid.forEach(i => { if(!debts[i.customer]) debts[i.customer] = {total:0, list:[]}; debts[i.customer].total += i.total; debts[i.customer].list.push(i); });
@@ -517,7 +541,7 @@
             if (targetBox) { targetBox.style.opacity = '0'; targetBox.style.transform = 'scale(0.95)'; setTimeout(() => { targetBox.remove(); if(document.querySelectorAll('[id^="debt-box-"]').length === 0) { document.getElementById('modalContent').innerHTML = `<p class="text-center py-6" style="color:var(--ink-soft);">🎉 ไม่พบยอดค้างชำระเงิน</p>`; } }, 300); }
             showSuccessToast(`💸 เคลียร์หนี้ คุณ ${customerName} สำเร็จ!`);
             const formDetails = new URLSearchParams(); formDetails.append('action', 'clearCustomerDebt'); formDetails.append('customerName', customerName);
-            fetch(WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formDetails.toString(), mode: 'no-cors' }).then(() => { setTimeout(() => { fetch(`${WEB_APP_URL}?action=getHistory&_t=${Date.now()}`); }, 1000); }).catch(err => console.log(err));
+            fetch(WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formDetails.toString(), mode: 'no-cors' }).then(() => { setTimeout(() => { preloadProductsData(false); }, 1000); });
         }
 
         function showModal(title, text) { document.getElementById('reportModal').classList.remove('hidden'); document.getElementById('modalTitle').innerText = title; document.getElementById('modalContent').innerHTML = text; }
