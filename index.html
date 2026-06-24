@@ -106,7 +106,7 @@
             <div class="flex justify-between items-center px-4 py-2.5" style="background:var(--header);">
                 <div class="flex items-center space-x-1.5">
                     <span class="w-2 h-2 rounded-full animate-pulse" style="background:var(--amber);"></span>
-                    <span class="text-[10px] font-bold text-white/70 uppercase tracking-wider font-receipt">BARCODE SCANNER</span>
+                    <span class="text-[10px] font-bold text-white/70 uppercase tracking-wider font-receipt">SCANNER</span>
                 </div>
                 <button id="cameraToggleBtn" onclick="toggleCamera()" class="key-btn text-white text-[10px] font-bold px-3.5 py-1 rounded-full" style="background:var(--till);">📷 เปิดกล้อง</button>
             </div>
@@ -116,7 +116,7 @@
                     <div id="reader" class="w-full h-full"></div>
                     <div id="laser-line" class="hidden absolute left-4 right-4 h-0.5 animate-scanline z-10" style="background:linear-gradient(to right, transparent, var(--amber), transparent); box-shadow:0 0 10px 1.5px var(--amber);"></div>
                 </div>
-                <div id="scan-status" class="text-center text-[11px] font-medium" style="color:var(--ink-soft);">💡 กดเปิดกล้อง แล้วเล็งบาร์โค้ดให้อยู่ในกรอบสแกนเพื่ออ่านค่า</div>
+                <div id="scan-status" class="text-center text-[11px] font-medium" style="color:var(--ink-soft);">💡 เล็งรหัสบาร์โค้ดหรือคิวอาร์โค้ดให้อยู่ในช่องกรอบกล้อง</div>
             </div>
         </div>
 
@@ -196,22 +196,13 @@
         let catalogProducts = []; let catalogFiltered = [];
 
         function unlockAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
-        
-        // 🛠️ ซ่อมแซมระบบเสียง: ย้ายการจำลอง Gain Node ให้ทำงานอย่างเสถียรบนทุกเบราว์เซอร์
         function playBeepSound() { 
             try { 
-                unlockAudio(); 
-                if (!audioCtx) return; 
-                const osc = audioCtx.createOscillator(); 
-                const gain = audioCtx.createGain(); 
-                osc.connect(gain); 
-                gain.connect(audioCtx.destination); 
-                osc.type = 'sine'; 
-                osc.frequency.setValueAtTime(1000, audioCtx.currentTime); 
-                gain.gain.setValueAtTime(0.2, audioCtx.currentTime); 
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08); 
-                osc.start(audioCtx.currentTime); 
-                osc.stop(audioCtx.currentTime + 0.08); 
+                unlockAudio(); if (!audioCtx) return; 
+                const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); 
+                osc.connect(gain); gain.connect(audioCtx.destination); osc.type = 'sine'; 
+                osc.frequency.setValueAtTime(1000, audioCtx.currentTime); gain.gain.setValueAtTime(0.2, audioCtx.currentTime); 
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08); osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.08); 
             } catch(e) { console.log(e); } 
         }
 
@@ -248,9 +239,9 @@
             });
         }
 
-        // ---------- 📷 ปรับปรุงกล้อง: ใช้สัดส่วนกล่องสแกนมาตรฐานสากลเพื่อให้อ่านบาร์โค้ดได้แม่นยำที่สุด ----------
+        // ---------- ระบบสแกนเนอร์รอบทิศทาง คมชัด ----------
         const SCAN_CONFIG = {
-            fps: 20,
+            fps: 22,
             qrbox: function(width, height) { return { width: Math.min(width * 0.85, 260), height: Math.min(height * 0.6, 110) }; },
             formatsToSupport: [ Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8, Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.QR_CODE ]
         };
@@ -260,7 +251,7 @@
             document.getElementById('laser-line').classList.remove('hidden');
             document.getElementById('cameraToggleBtn').innerText = "🔴 ปิดกล้อง";
             document.getElementById('cameraToggleBtn').style.background = "var(--stamp)";
-            document.getElementById('scan-status').innerText = "🎯 เล็งบาร์โค้ดให้อยู่ในกรอบเลนส์";
+            document.getElementById('scan-status').innerText = "🎯 เล็งบาร์โค้ด / QR Code ให้อยู่ในกรอบ";
         }
 
         async function startCamera() {
@@ -442,12 +433,6 @@
             }
         }
 
-        // 🖼️ ระบบค้นหารูปภาพสินค้าอัตโนมัติตามชื่อผ่านระบบ Unsplash Source API
-        function getProductImageUrl(productName) {
-            const cleanName = encodeURIComponent(productName.split(' ')[0]); 
-            return `https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=150&q=80&sig=${cleanName}`;
-        }
-
         function openProductPickerModal() {
             catalogFiltered = catalogProducts;
             renderCatalogModal();
@@ -467,7 +452,7 @@
             renderCatalogList();
         }
 
-        // 🛍️ ซ่อมแซมระบบเลือกสินค้า: เปลี่ยนแมปฟังก์ชันเป็นดึงข้อมูลผ่าน Index ที่ถูกต้อง เพื่อแก้ไข Bug เลือกแล้วเพิ่มไม่เข้าตะกร้า
+        // 🔥 ดึงรูปภาพตรงจากคอลัมน์ Image ใน Google Sheet มาแสดงผลในตารางเลือกซื้อ Grid View
         function renderCatalogList() {
             const listEl = document.getElementById('catalogList');
             if (!listEl) return;
@@ -475,16 +460,20 @@
             let html = "";
             catalogFiltered.forEach((p) => {
                 const isOut = p.stock <= 0;
-                const imgUrl = getProductImageUrl(p.name);
-                // ส่งค่าพารามิเตอร์แบบ String ปลอดภัย ไม่หลุดตำแหน่ง Index
+                
+                // 🛠️ ตรวจสอบลิงก์รูปภาพ: หากในคอลัมน์ของ Google Sheet ว่างเปล่าหรือไม่มีข้อมูล จะสลับไปแสดงรูปภาพกล่องสไตล์มินิมอลแทนอัตโนมัติเพื่อป้องกันไอคอนแตก
+                const finalImgUrl = p.image && String(p.image).trim() !== "" ? p.image : "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=150&q=80";
+                
                 html += `
                     <div onclick="${isOut ? '' : `selectProductFromCatalog('${p.barcode}', '${p.name.replace(/'/g, "\\'")}', ${p.price}, ${p.stock})`}" 
                          class="key-btn p-2.5 rounded-2xl shadow-sm flex flex-col justify-between border cursor-pointer active:opacity-70 bg-white" 
                          style="border-color:${isOut ? 'rgba(189,58,46,0.25)' : 'var(--line)'}; opacity:${isOut ? '0.5' : '1'};">
-                        <div class="w-full h-20 rounded-xl overflow-hidden mb-2 bg-slate-100 relative">
-                            <img src="${imgUrl}" alt="${p.name}" class="w-full h-full object-cover">
-                            <div class="absolute top-1 right-1 text-[8px] bg-black/60 text-white px-1 py-0.5 rounded font-receipt">คลัง: ${p.stock}</div>
+                        
+                        <div class="w-full h-24 rounded-xl overflow-hidden mb-2 bg-slate-50 relative border border-slate-100">
+                            <img src="${finalImgUrl}" alt="${p.name}" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=150&q=80'">
+                            <div class="absolute top-1 right-1 text-[8px] bg-black/60 text-white px-1.5 py-0.5 rounded font-receipt">คลัง: ${p.stock}</div>
                         </div>
+                        
                         <div class="space-y-0.5 min-w-0">
                             <div class="font-bold text-[11px] truncate" style="color:var(--ink);">${p.name}</div>
                             <div class="text-[9px] font-receipt truncate" style="color:var(--ink-soft);">${p.barcode}</div>
@@ -505,7 +494,6 @@
             renderCatalogList();
         }
 
-        // 🛒 ฟังก์ชันจัดการการคลิกเลือกสินค้าจากหน้า Grid สำเร็จรูป
         function selectProductFromCatalog(barcode, name, price, stock) {
             playBeepSound();
             if (navigator.vibrate) navigator.vibrate(35);
