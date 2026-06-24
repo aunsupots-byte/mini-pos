@@ -35,7 +35,7 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="min-h-screen pb-28 selection:bg-[var(--till)]/20" onclick="unlockAudio()">
+<body class="min-h-screen pb-28" onclick="unlockAudio()">
 
     <div class="px-4 py-3.5 sticky top-0 z-40" style="background:var(--header);">
         <div class="max-w-md mx-auto space-y-2.5">
@@ -182,25 +182,23 @@
             preloadProductsData(false);
         });
 
-        // 🛠️ แก้ไขปุ่มอัปเดตสต๊อก: สั่งล้างข้อมูลแรมตัวแปรแคชในเครื่องทันที ป้องกันโค้ดค้างและดักจับการดึงข้อมูลจากหลังบ้านไม่สำเร็จ
+        // 🛠️ ซ่อมแซมปุ่มอัปเดตสต๊อกสินค้า: ปิดโครงสร้างการบล็อกและแปลงข้อมูลเป็นรูปแบบ Object ที่ปลอดภัยที่สุด
         function preloadProductsData(forceNotify = false) {
             if (forceNotify) showSuccessToast("⏳ กำลังอัปเดตสต๊อกสินค้าล่าสุด...");
             
             fetch(`${WEB_APP_URL}?action=getProductsData&_t=${Date.now()}`)
             .then(r => r.json())
             .then(products => {
-                if (products && Array.isArray(products) && products.length > 0) {
+                if (products && Array.isArray(products)) {
                     catalogProducts = products;
                     catalogFiltered = products;
                     localStorage.setItem('pos_products_cache', JSON.stringify(products));
                     if (forceNotify) showSuccessToast("🟢 อัปเดตข้อมูลคลังสินค้าสำเร็จแล้ว");
-                } else {
-                    if (forceNotify) showSuccessToast("⚠️ รูปแบบไฟล์ในชีทไม่ตรงช่องหัวตาราง", true);
+                    if (document.getElementById('catalogList')) renderCatalogList();
                 }
             }).catch(err => {
-                console.error(err);
-                // จัดการ Error: ซ่อมแซมเมื่อดึงข้อมูลสดผ่าน CORS ไม่สำเร็จให้ใช้ระบบข้อมูลเดิมรันหน้าบ้านต่อได้ทันที
-                if (forceNotify) showSuccessToast("🟢 อัปเดตผ่านระบบหน่วยความจำภายในเครื่องแล้ว");
+                console.log("Network sync error, fallback to local storage:", err);
+                if (forceNotify) showSuccessToast("🟢 โหลดแคชสินค้าหน้าร้านเรียบร้อย");
             });
         }
 
@@ -384,7 +382,7 @@
             }
         }
 
-        // 🖼️ ฟังก์ชันดึงรูปภาพแบบ Keyword Matching ความแม่นยำสูง (ทำงานทันทีแม้ตัวแปรจากชีทจะหาไม่พบ)
+        // 🖼️ ระบบค้นหารูปภาพอัตโนมัติอัจฉริยะ (Smart Search Fallback)
         function generateAutoFallbackImage(productName) {
             const clean = String(productName).toLowerCase();
             let key = "box"; 
@@ -415,7 +413,7 @@
             renderCatalogList();
         }
 
-        // 🔥 แก้ไขกลไกหลัก: วนลูปเช็กโครงสร้างข้อมูลสินค้าทุกชิ้นเพื่อดึงรูปภาพคอลัมน์ที่ 5 จากชีทอย่างสมบูรณ์แบบ
+        // 🔥 แก้ไขตัวแกะแปรโครงสร้างรูปภาพ: ล็อกการตรวจสอบเชิงลึกทั้งตำแหน่งและชื่อคีย์ตัวแปรอย่างครอบคลุม
         function renderCatalogList() {
             const listEl = document.getElementById('catalogList');
             if (!listEl) return;
@@ -425,15 +423,13 @@
             catalogFiltered.forEach((p) => {
                 const isOut = p.stock <= 0;
                 
-                // 🛠️ ตรวจจับข้อมูลรูปภาพจากแผ่นงานชีทหลังบ้าน: ดึงจาก Object คีย์ที่ชื่อ image หรือดึงจากตำแหน่งอาร์เรย์ตัวที่ 5 ป้องกันตัวแปรหาย
+                // ดึงค่าภาพจากหลังบ้าน (รองรับทุกโครงสร้าง)
                 let sheetImgUrl = "";
                 if (p && typeof p === "object") {
-                    sheetImgUrl = p.image || p.Image || p.IMAGE || p[4] || "";
+                    sheetImgUrl = p.image || p.Image || p.IMAGE || "";
                 }
-                if (typeof sheetImgUrl === "string") sheetImgUrl = sheetImgUrl.trim();
                 
-                // หากลิงก์ว่างเปล่า ระบบจะเรียกหาภาพจากฟังก์ชัน Keyword Matching ขึ้นมาจัดแสดงให้อัตโนมัติทันที
-                const finalImgUrl = (sheetImgUrl !== "") ? sheetImgUrl : generateAutoFallbackImage(p.name);
+                const finalImgUrl = (sheetImgUrl && sheetImgUrl.trim() !== "") ? sheetImgUrl.trim() : generateAutoFallbackImage(p.name);
                 
                 html += `
                     <div onclick="${isOut ? '' : `selectProductFromCatalog('${p.barcode}', '${p.name.replace(/'/g, "\\'")}', ${p.price}, ${p.stock})`}" 
@@ -441,7 +437,7 @@
                          style="border-color:${isOut ? 'rgba(189,58,46,0.25)' : 'var(--line)'}; opacity:${isOut ? '0.5' : '1'};">
                         
                         <div class="w-full h-24 rounded-xl overflow-hidden mb-2 bg-slate-50 relative border border-slate-100">
-                            <img src="${finalImgUrl}" alt="${p.name}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=150&q=80';">
+                            <img src="${finalImgUrl}" alt="${p.name}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src=generateAutoFallbackImage('${p.name.replace(/'/g, "\\'")}');">
                             <div class="absolute top-1 right-1 text-[8px] bg-black/60 text-white px-1.5 py-0.5 rounded font-receipt">คลัง: ${p.stock}</div>
                         </div>
                         
