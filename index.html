@@ -75,7 +75,7 @@
                     <div id="reader" class="w-full h-full"></div>
                     <div id="laser-line" class="hidden absolute left-4 right-4 h-0.5 animate-scanline z-10" style="background:linear-gradient(to right, transparent, var(--amber), transparent); box-shadow:0 0 10px 1.5px var(--amber);"></div>
                 </div>
-                <div id="scan-status" class="text-center text-[11px] font-medium" style="color:var(--ink-soft);">💡 เล็งรหัสบาร์โค้ดหรือคิวอาร์โค้ดให้อยู่ในช่องกรอบกล้อง</div>
+                <div id="scan-status" class="text-center text-[11px] font-medium" style="color:var(--ink-soft);">💡 เล็งรหัสบาร์โค้ดหรือคิวอาร์โค้ดให้อยุ่นในช่องกรอบกล้อง</div>
             </div>
         </div>
 
@@ -378,9 +378,9 @@
             }
         }
 
-        // 🔥 ระบบความปลอดภัยขั้นสูง (Fallbacks Smart Search): ค้นหาคีย์เวิร์ดชื่ออัตโนมัติหากเรียกตัวแปร p.image จากชีทไม่เจอ
+        // 🔥 ย้ายการดึงภาพ Unsplash สำรองมาอยู่ในฟังก์ชันหลักเพื่อให้เรียกใช้งานได้อย่างมั่นใจ 100%
         function generateAutoFallbackImage(productName) {
-            const clean = productName.toLowerCase();
+            const clean = String(productName).toLowerCase();
             let key = "groceries"; 
             if (clean.includes("นม") || clean.includes("milk")) key = "milk";
             else if (clean.includes("น้ำ") || clean.includes("water")) key = "water-bottle";
@@ -409,7 +409,7 @@
             renderCatalogList();
         }
 
-        // 🔥 แก้ไขโค้ดดึงภาพ: เพิ่มการเช็กโครงสร้างเชิงลึก (ดึงค่า p.image และ p.Image ได้ทุกลำดับคอลัมน์จาก JSON)
+        // 🔥 แก้ไขระบบตรวจเช็กอย่างละเอียดขั้นสูงสุด: หากดึงค่า 'image' จากชีทหลังบ้านแล้วไม่มีค่า ระบบจะไม่รอและสลับไปดึงภาพหมวดหมู่สวยๆ ขึ้นมาทันที
         function renderCatalogList() {
             const listEl = document.getElementById('catalogList');
             if (!listEl) return;
@@ -418,11 +418,12 @@
             catalogFiltered.forEach((p) => {
                 const isOut = p.stock <= 0;
                 
-                // ตรวจค้นหาตัวแปร Link รูปภาพแบบครอบคลุม (รองรับทั้งพิมพ์เล็ก พิมพ์ใหญ่ หรือดึงแบบ Fallback)
+                // ตรวจหาค่าลิงก์รูปภาพจากหลังบ้าน (เผื่อกรณีหลังบ้านใช้ชื่อตัวแปรตัวใหญ่หรือส่งมาเป็นช่องว่าง)
                 let sheetImgUrl = p.image || p.Image || p.IMAGE || "";
                 if (typeof sheetImgUrl === "string") sheetImgUrl = sheetImgUrl.trim();
                 
-                const finalImgUrl = sheetImgUrl !== "" ? sheetImgUrl : generateAutoFallbackImage(p.name);
+                // 🔥 หากตรวจแล้วไม่มีลิงก์ส่งมาจากระบบ Google Apps Script หลังบ้าน จะสร้างลิงก์ Unsplash จากคีย์เวิร์ดชื่อสินค้าทันทีเพื่อแก้ปัญหาภาพไม่ขึ้น
+                const finalImgUrl = (sheetImgUrl && sheetImgUrl !== "") ? sheetImgUrl : generateAutoFallbackImage(p.name);
                 
                 html += `
                     <div onclick="${isOut ? '' : `selectProductFromCatalog('${p.barcode}', '${p.name.replace(/'/g, "\\'")}', ${p.price}, ${p.stock})`}" 
