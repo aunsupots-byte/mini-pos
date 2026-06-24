@@ -23,6 +23,8 @@
             --stamp-pale:#FBEAE7;
             --amber:#D98A2B;
             --amber-pale:#FBF0DF;
+            --blue:#2F5D8A;
+            --blue-pale:#E9F0F6;
             --header:#1B1D17;
         }
         body{
@@ -80,7 +82,7 @@
 <body class="min-h-screen pb-28 selection:bg-[var(--till)]/20" onclick="unlockAudio()">
 
     <div class="px-4 py-3.5 sticky top-0 z-40" style="background:var(--header);">
-        <div class="max-w-md mx-auto flex justify-between items-center">
+        <div class="max-w-md mx-auto space-y-2.5">
             <div class="flex items-center space-x-2.5">
                 <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:var(--till);">
                     <span class="text-white font-display font-extrabold text-sm">฿</span>
@@ -90,11 +92,12 @@
                     <div class="font-receipt text-[9px] text-white/40 tracking-wider">POINT OF SALE</div>
                 </div>
             </div>
-            <div class="flex space-x-1.5 text-[10px] font-bold">
-                <button onclick="openAddProductModal()" class="key-btn text-white px-2.5 py-2 rounded-xl border border-white/10" style="background:var(--till);">📦 คลัง</button>
-                <button onclick="openUnpaidModal()" class="key-btn px-2.5 py-2 rounded-xl border" style="background:var(--stamp-pale)/10; background-color:rgba(189,58,46,0.16); color:#FF8A7A; border-color:rgba(189,58,46,0.3);">🚨 ค้างจ่าย</button>
-                <button onclick="openHistoryModal()" class="key-btn px-2.5 py-2 rounded-xl border" style="background-color:rgba(255,255,255,0.08); color:#D9D4C2; border-color:rgba(255,255,255,0.14);">📊 บัญชี</button>
-                <button onclick="openStockModal()" class="key-btn text-white px-2.5 py-2 rounded-xl border border-white/10" style="background:var(--amber);">🟢 สต๊อก</button>
+            <div class="grid grid-cols-5 gap-1.5 text-[9px] font-bold leading-tight">
+                <button onclick="openProductPickerModal()" class="key-btn text-white flex flex-col items-center justify-center gap-0.5 py-2 rounded-xl border border-white/10" style="background:var(--blue);"><span class="text-sm">🛍️</span>เลือกสินค้า</button>
+                <button onclick="openAddProductModal()" class="key-btn text-white flex flex-col items-center justify-center gap-0.5 py-2 rounded-xl border border-white/10" style="background:var(--till);"><span class="text-sm">📦</span>คลัง</button>
+                <button onclick="openStockModal()" class="key-btn text-white flex flex-col items-center justify-center gap-0.5 py-2 rounded-xl border border-white/10" style="background:var(--amber);"><span class="text-sm">🟢</span>สต๊อก</button>
+                <button onclick="openUnpaidModal()" class="key-btn flex flex-col items-center justify-center gap-0.5 py-2 rounded-xl border" style="background-color:rgba(189,58,46,0.16); color:#FF8A7A; border-color:rgba(189,58,46,0.3);"><span class="text-sm">🚨</span>ค้างจ่าย</button>
+                <button onclick="openHistoryModal()" class="key-btn flex flex-col items-center justify-center gap-0.5 py-2 rounded-xl border" style="background-color:rgba(255,255,255,0.08); color:#D9D4C2; border-color:rgba(255,255,255,0.14);"><span class="text-sm">📊</span>บัญชี</button>
             </div>
         </div>
     </div>
@@ -192,6 +195,7 @@
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx92ov484ob-O4ncwwjpzhD2E5wgwmuhAguCRD8gBiVpyhCiyqLru0LTCqlnHjwHhtFvg/exec";
 
         let cart = []; let html5Qrcode = null; let isCameraOpen = false; let audioCtx = null; let isProcessing = false;
+        let catalogProducts = []; let catalogFiltered = [];
 
         function unlockAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
         function playBeepSound() { try { unlockAudio(); if (!audioCtx) return; const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type = 'sine'; osc.frequency.setValueAtTime(1000, audioCtx.currentTime); gain.gain.setValueAtTime(0.3, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08); osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.08); } catch(e) {} }
@@ -422,6 +426,64 @@
                     document.getElementById('modalContent').innerHTML = `<p class="text-center py-6" style="color:var(--ink-soft);">ไม่พบรายการสินค้าในหน้าแท็บ Products</p>`;
                 }
             }).catch(() => { document.getElementById('modalContent').innerHTML = `<p class="text-center py-6 font-bold" style="color:var(--stamp);">❌ ระบบขัดข้อง กรุณาเช็กการ Deploy ของหลังบ้านครับ</p>`; });
+        }
+
+        function openProductPickerModal() {
+            showModal("🛍️ เลือกสินค้าจากคลัง", `<p class="text-center py-4 font-medium animate-pulse" style="color:var(--ink-soft);">⏳ กำลังโหลดรายชื่อสินค้า...</p>`);
+            fetch(`${WEB_APP_URL}?action=getProductsData&_t=${Date.now()}`).then(r => r.json()).then(products => {
+                catalogProducts = (products && products.length) ? products : [];
+                catalogFiltered = catalogProducts;
+                renderCatalogModal();
+            }).catch(() => { document.getElementById('modalContent').innerHTML = `<p class="text-center py-6 font-bold" style="color:var(--stamp);">❌ ระบบขัดข้อง กรุณาเช็กการ Deploy ของหลังบ้านครับ</p>`; });
+        }
+
+        function renderCatalogModal() {
+            const wrap = `
+                <div class="space-y-3">
+                    <input type="text" id="catalogSearch" oninput="filterCatalog(this.value)" placeholder="🔎 ค้นหาชื่อสินค้าหรือบาร์โค้ด..." class="w-full p-3 rounded-xl text-sm font-bold" style="background:var(--paper); border:1px solid var(--line); color:var(--ink);">
+                    <p class="text-[10px] font-medium" style="color:var(--ink-soft);">แตะที่สินค้าเพื่อเพิ่มลงตะกร้าทันที (จำนวน 1 ชิ้น/ครั้ง)</p>
+                    <div id="catalogList" class="space-y-2 max-h-[58vh] overflow-y-auto pr-1"></div>
+                </div>
+            `;
+            document.getElementById('modalContent').innerHTML = wrap;
+            renderCatalogList();
+        }
+
+        function renderCatalogList() {
+            const listEl = document.getElementById('catalogList');
+            if (!listEl) return;
+            if (!catalogFiltered.length) { listEl.innerHTML = `<p class="text-center py-6 text-xs" style="color:var(--ink-soft);">ไม่พบสินค้าที่ค้นหา</p>`; return; }
+            let html = "";
+            catalogFiltered.forEach((p, idx) => {
+                const isOut = p.stock <= 0;
+                html += `
+                    <div onclick="selectProductFromCatalog(${idx})" class="key-btn p-3.5 rounded-2xl shadow-sm flex justify-between items-center border cursor-pointer active:opacity-70" style="background:${isOut ? 'var(--stamp-pale)' : 'var(--blue-pale)'}; border-color:${isOut ? 'rgba(189,58,46,0.25)' : 'var(--line)'};">
+                        <div class="truncate" style="max-width:65%;">
+                            <div class="font-bold text-xs sm:text-sm truncate" style="color:${isOut ? 'var(--stamp)' : 'var(--ink)'};">${p.name}</div>
+                            <div class="text-[10px] font-receipt mt-0.5" style="color:var(--ink-soft);">${p.barcode} · สต๊อก ${p.stock} ชิ้น</div>
+                        </div>
+                        <div class="text-right">
+                            <span class="font-receipt font-bold text-sm" style="color:var(--blue);">${p.price.toFixed(2)} ฿</span>
+                            <div class="text-[9px] font-bold" style="color:var(--ink-soft);">แตะเพื่อเพิ่ม ➕</div>
+                        </div>
+                    </div>
+                `;
+            });
+            listEl.innerHTML = html;
+        }
+
+        function filterCatalog(query) {
+            const q = query.trim().toLowerCase();
+            catalogFiltered = !q ? catalogProducts : catalogProducts.filter(p => (p.name || "").toLowerCase().includes(q) || String(p.barcode || "").toLowerCase().includes(q));
+            renderCatalogList();
+        }
+
+        function selectProductFromCatalog(idx) {
+            const p = catalogFiltered[idx];
+            if (!p) return;
+            cart.push({ barcode: p.barcode, name: p.name, price: parseFloat(p.price), quantity: 1 });
+            updateCartUI();
+            showSuccessToast(`เพิ่ม "${p.name}" ลงตะกร้าแล้ว`);
         }
 
         function openUnpaidModal() {
