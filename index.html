@@ -112,11 +112,11 @@
             </div>
             <div class="tear-top-card"></div>
             <div class="p-4 pt-2 space-y-2">
-                <div class="relative w-full bg-black rounded-xl overflow-hidden h-24 border shadow-inner flex items-center justify-center" style="border-color:var(--line);">
+                <div class="relative w-full bg-black rounded-xl overflow-hidden h-36 border shadow-inner flex items-center justify-center" style="border-color:var(--line);">
                     <div id="reader" class="w-full h-full"></div>
-                    <div id="laser-line" class="hidden absolute left-4 right-4 h-0.5规范 animate-scanline z-10" style="background:linear-gradient(to right, transparent, var(--amber), transparent); box-shadow:0 0 10px 1.5px var(--amber); top: 50%;"></div>
+                    <div id="laser-line" class="hidden absolute left-4 right-4 h-0.5 animate-scanline z-10" style="background:linear-gradient(to right, transparent, var(--amber), transparent); box-shadow:0 0 10px 1.5px var(--amber);"></div>
                 </div>
-                <div id="scan-status" class="text-center text-[11px] font-medium" style="color:var(--ink-soft);">💡 เล็งแถบบาร์โค้ดให้อยู่ในกรอบเลนส์สแกนเนอร์</div>
+                <div id="scan-status" class="text-center text-[11px] font-medium" style="color:var(--ink-soft);">💡 กดเปิดกล้อง แล้วเล็งบาร์โค้ดให้อยู่ในกรอบสแกนเพื่ออ่านค่า</div>
             </div>
         </div>
 
@@ -196,7 +196,24 @@
         let catalogProducts = []; let catalogFiltered = [];
 
         function unlockAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
-        function playBeepSound() { try { unlockAudio(); if (!audioCtx) return; const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type = 'sine'; osc.frequency.setValueAtTime(1000, audioCtx.currentTime); gain.gain.setValueAtTime(0.3, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08); osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.08); } catch(e) {} }
+        
+        // 🛠️ ซ่อมแซมระบบเสียง: ย้ายการจำลอง Gain Node ให้ทำงานอย่างเสถียรบนทุกเบราว์เซอร์
+        function playBeepSound() { 
+            try { 
+                unlockAudio(); 
+                if (!audioCtx) return; 
+                const osc = audioCtx.createOscillator(); 
+                const gain = audioCtx.createGain(); 
+                osc.connect(gain); 
+                gain.connect(audioCtx.destination); 
+                osc.type = 'sine'; 
+                osc.frequency.setValueAtTime(1000, audioCtx.currentTime); 
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime); 
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08); 
+                osc.start(audioCtx.currentTime); 
+                osc.stop(audioCtx.currentTime + 0.08); 
+            } catch(e) { console.log(e); } 
+        }
 
         function showSuccessToast(message, isError = false) {
             const toast = document.getElementById('successToast'); const icon = document.getElementById('toastIcon'); const title = document.getElementById('toastTitle'); const msgText = document.getElementById('toastMessage');
@@ -206,14 +223,13 @@
             toast.classList.remove('hidden'); setTimeout(() => { toast.classList.add('hidden'); }, 2500);
         }
 
-        // 🔥 ระบบเพิ่มประสิทธิภาพ: พรีโหลดข้อมูลเก็บลงแคชเครื่อง (LocalStorage) ตั้งแต่เริ่มเว็บ เพื่อความเร็วระดับมิลลิวินาที
         window.addEventListener('DOMContentLoaded', () => {
             const localCachedData = localStorage.getItem('pos_products_cache');
             if (localCachedData) {
                 catalogProducts = JSON.parse(localCachedData);
                 catalogFiltered = catalogProducts;
             }
-            preloadProductsData(false); // ซิงค์ข้อมูลจากคลังแผ่นงานเงียบ ๆ เป็นพื้นหลัง
+            preloadProductsData(false);
         });
 
         function preloadProductsData(forceNotify = false) {
@@ -232,11 +248,11 @@
             });
         }
 
-        // ---------- กล้องขนาดพรีเมียม กะทัดรัด ----------
+        // ---------- 📷 ปรับปรุงกล้อง: ใช้สัดส่วนกล่องสแกนมาตรฐานสากลเพื่อให้อ่านบาร์โค้ดได้แม่นยำที่สุด ----------
         const SCAN_CONFIG = {
-            fps: 18,
-            qrbox: function(width, height) { return { width: Math.min(width * 0.85, 260), height: Math.min(height * 0.5, 75) }; },
-            formatsToSupport: [ Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8, Html5QrcodeSupportedFormats.CODE_128 ]
+            fps: 20,
+            qrbox: function(width, height) { return { width: Math.min(width * 0.85, 260), height: Math.min(height * 0.6, 110) }; },
+            formatsToSupport: [ Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8, Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.QR_CODE ]
         };
 
         function onCameraStarted() {
@@ -244,7 +260,7 @@
             document.getElementById('laser-line').classList.remove('hidden');
             document.getElementById('cameraToggleBtn').innerText = "🔴 ปิดกล้อง";
             document.getElementById('cameraToggleBtn').style.background = "var(--stamp)";
-            document.getElementById('scan-status').innerText = "🎯 เล็งยิงรหัสบาร์โค้ดในแถบเลนส์";
+            document.getElementById('scan-status').innerText = "🎯 เล็งบาร์โค้ดให้อยู่ในกรอบเลนส์";
         }
 
         async function startCamera() {
@@ -267,7 +283,7 @@
                     return;
                 } catch(err) { continue; }
             }
-            document.getElementById('scan-status').innerHTML = "❌ ไม่พบกล้อง หรือพิมพ์บาร์โค้ดสดที่ช่องด้านล่างได้ครับ";
+            document.getElementById('scan-status').innerHTML = "❌ ไม่พบสัญญาณกล้อง สามารถกรอกบาร์โค้ดเองได้ครับ";
         }
 
         async function stopCamera() {
@@ -284,19 +300,16 @@
         function toggleCamera() { isCameraOpen ? stopCamera() : startCamera(); }
         function onScanSuccess(decodedText) { if (isProcessing) return; isProcessing = true; playBeepSound(); if (navigator.vibrate) navigator.vibrate([80, 40, 80]); document.getElementById('barcode').value = decodedText; fetchProductData(decodedText); setTimeout(() => { stopCamera(); showSuccessToast("จับรหัสสินค้าสำเร็จ!"); }, 300); }
 
-        // 🔥 เร่งความเร็ว: การหาข้อมูลบาร์โค้ดจะสืบค้นในหน่วยความจำ RAM ของมือถือผู้ใช้ทันที ไม่ต้อง Fetch ไปหา Google Sheet ทุกรอบที่เจอของ
         function fetchProductData(bc) { 
             if(!bc) return; 
             document.getElementById('productName').value = "⏳ ค้นข้อมูลในแรมหน่วยความจำ..."; 
             
-            // ค้นหาในก้อนแคชภายในเครื่องทันที
             const matchedProduct = catalogProducts.find(p => String(p.barcode).trim() === String(bc).trim());
             if (matchedProduct) {
                 document.getElementById('productName').value = matchedProduct.name;
                 document.getElementById('price').value = matchedProduct.price;
                 showSuccessToast(`พบข้อมูล: ${matchedProduct.name}`);
             } else {
-                // หากไม่เจอในแคช จึงจะไปดึงสดจากแผ่นงาน
                 fetch(`${WEB_APP_URL}?barcode=${bc}&_t=${Date.now()}`).then(r=>r.json()).then(d=>{ 
                     if(d.found){ 
                         document.getElementById('productName').value = d.name; 
@@ -338,7 +351,7 @@
             let html = `<div class="space-y-4 p-1">
                 <p class="text-xs font-bold uppercase tracking-wide" style="color:var(--ink-soft);">📦 แบบฟอร์มเพิ่มสินค้าใหม่เข้าฐานข้อมูล</p>
                 <div class="space-y-3">
-                    <div><label class="block text-[11px] font-bold mb-1" style="color:var(--ink-soft);">เลขบาร์โค้ด / รหัสสินค้า</label><input type="text" id="newPBarcode" class="w-full p-3.5 rounded-xl font-receipt font-bold text-sm" style="background:var(--paper); border:1px solid var(--line); color:var(--ink);" placeholder="พิมพ์หรือสแกนรหัสที่นี่"></div>
+                    <div><label class="block text-[11px] font-bold mb-1" style="color:var(--ink-soft);">เลขบาร์โค้ด / รหัสสินค้า</label><input type="text" id="newPBarcode" class="w-full p-3.5 rounded-xl font-receipt font-bold text-sm" style="background:var(--paper); border:1px solid var(--line); color:var(--ink);" placeholder="พิมพ์รหัสสินค้า"></div>
                     <div><label class="block text-[11px] font-bold mb-1" style="color:var(--ink-soft);">ชื่อรายการสินค้า</label><input type="text" id="newPName" class="w-full p-3.5 rounded-xl text-sm font-bold" style="background:var(--paper); border:1px solid var(--line); color:var(--ink);" placeholder="เช่น นมจืดตราหมี 200ml"></div>
                     <div><label class="block text-[11px] font-bold mb-1" style="color:var(--ink-soft);">ราคาตั้งขายต่อชิ้น (บาท)</label><input type="number" id="newPPrice" class="w-full p-3.5 rounded-xl font-receipt font-bold text-sm" style="background:var(--paper); border:1px solid var(--line); color:var(--till-deep);" placeholder="0.00"></div>
                 </div>
@@ -403,7 +416,6 @@
         }
 
         function openStockModal() {
-            // 🔥 เร่งความเร็ว: ดึงข้อมูลคงคลังจากความจำเครื่องมาวาดตารางทันทีโดยไม่ต้องรอดาวน์โหลดจากเน็ต
             let stockHtml = '<div class="space-y-2.5 max-h-[72vh] overflow-y-auto pr-1">';
             if(catalogProducts && catalogProducts.length > 0) {
                 catalogProducts.forEach(p => {
@@ -430,14 +442,13 @@
             }
         }
 
-        // 🔥 เพิ่มฟังก์ชัน: ค้นหารูปภาพสินค้าจากชื่อสินค้าอัตโนมัติผ่าน Unsplash API เพื่อเพิ่มความพรีเมียมตัวจริง
+        // 🖼️ ระบบค้นหารูปภาพสินค้าอัตโนมัติตามชื่อผ่านระบบ Unsplash Source API
         function getProductImageUrl(productName) {
-            const cleanName = encodeURIComponent(productName.split(' ')[0]); // ดึงคีย์เวิร์ดหลักของชื่อสินค้า
-            return `https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=120&q=80&sig=${cleanName}`;
+            const cleanName = encodeURIComponent(productName.split(' ')[0]); 
+            return `https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=150&q=80&sig=${cleanName}`;
         }
 
         function openProductPickerModal() {
-            // ดึงจากแคชทันทีโดยไม่ต้อง fetch โหลดเน็ต
             catalogFiltered = catalogProducts;
             renderCatalogModal();
         }
@@ -450,25 +461,29 @@
                     <div id="catalogList" class="grid grid-cols-2 gap-2.5 max-h-[58vh] overflow-y-auto pr-1 no-scrollbar"></div>
                 </div>
             `;
+            document.getElementById('reportModal').classList.remove('hidden');
+            document.getElementById('modalTitle').innerText = "🛍️ เลือกสินค้าจากคลัง";
             document.getElementById('modalContent').innerHTML = wrap;
             renderCatalogList();
         }
 
-        // 🔥 อัปเดตโครงสร้าง: ปรับรูปแบบ Modal รายการเลือกสินค้าหลักเป็นแบบ 2 คอลัมน์ (Grid View) พร้อมโหลดภาพสินค้าประกอบชัดเจน
+        // 🛍️ ซ่อมแซมระบบเลือกสินค้า: เปลี่ยนแมปฟังก์ชันเป็นดึงข้อมูลผ่าน Index ที่ถูกต้อง เพื่อแก้ไข Bug เลือกแล้วเพิ่มไม่เข้าตะกร้า
         function renderCatalogList() {
             const listEl = document.getElementById('catalogList');
             if (!listEl) return;
             if (!catalogFiltered.length) { listEl.innerHTML = `<p class="col-span-2 text-center py-6 text-xs" style="color:var(--ink-soft);">ไม่พบสินค้าในฐานความจำ</p>`; return; }
             let html = "";
-            catalogFiltered.forEach((p, idx) => {
+            catalogFiltered.forEach((p) => {
                 const isOut = p.stock <= 0;
-                const imgUrl = getProductImageUrl(p.name); // เรียกหาภาพประกอบตามคีย์เวิร์ดชื่อ
-                
+                const imgUrl = getProductImageUrl(p.name);
+                // ส่งค่าพารามิเตอร์แบบ String ปลอดภัย ไม่หลุดตำแหน่ง Index
                 html += `
-                    <div onclick="selectProductFromCatalog(${idx})" class="key-btn p-2.5 rounded-2xl shadow-sm flex flex-col justify-between border cursor-pointer active:opacity-70 bg-white" style="border-color:${isOut ? 'rgba(189,58,46,0.25)' : 'var(--line)'}; opacity:${isOut ? '0.6' : '1'};">
+                    <div onclick="${isOut ? '' : `selectProductFromCatalog('${p.barcode}', '${p.name.replace(/'/g, "\\'")}', ${p.price}, ${p.stock})`}" 
+                         class="key-btn p-2.5 rounded-2xl shadow-sm flex flex-col justify-between border cursor-pointer active:opacity-70 bg-white" 
+                         style="border-color:${isOut ? 'rgba(189,58,46,0.25)' : 'var(--line)'}; opacity:${isOut ? '0.5' : '1'};">
                         <div class="w-full h-20 rounded-xl overflow-hidden mb-2 bg-slate-100 relative">
                             <img src="${imgUrl}" alt="${p.name}" class="w-full h-full object-cover">
-                            <div class="absolute top-1 right-1 text-[8px] bg-black/60 text-white px-1 py-0.5 rounded font-receipt">📦 คลัง: ${p.stock}</div>
+                            <div class="absolute top-1 right-1 text-[8px] bg-black/60 text-white px-1 py-0.5 rounded font-receipt">คลัง: ${p.stock}</div>
                         </div>
                         <div class="space-y-0.5 min-w-0">
                             <div class="font-bold text-[11px] truncate" style="color:var(--ink);">${p.name}</div>
@@ -476,7 +491,7 @@
                         </div>
                         <div class="flex justify-between items-center mt-1.5 pt-1 border-t border-dashed" style="border-color:var(--line);">
                             <span class="font-receipt font-bold text-xs" style="color:var(--blue);">${p.price.toFixed(2)} ฿</span>
-                            <span class="text-[9px] font-bold text-emerald-700">เลือก ➕</span>
+                            <span class="text-[9px] font-bold text-emerald-700">${isOut ? 'หมด' : 'เลือก ➕'}</span>
                         </div>
                     </div>
                 `;
@@ -490,13 +505,13 @@
             renderCatalogList();
         }
 
-        function selectProductFromCatalog(idx) {
-            const p = catalogFiltered[idx];
-            if (!p) return;
+        // 🛒 ฟังก์ชันจัดการการคลิกเลือกสินค้าจากหน้า Grid สำเร็จรูป
+        function selectProductFromCatalog(barcode, name, price, stock) {
+            playBeepSound();
+            if (navigator.vibrate) navigator.vibrate(35);
             
-            // เช็กจำนวนสต๊อกก่อนเพิ่มลงตะกร้า
-            const exist = cart.find(item => item.barcode === p.barcode);
-            if(exist && exist.quantity >= p.stock) {
+            const exist = cart.find(item => item.barcode === barcode);
+            if(exist && exist.quantity >= stock) {
                 showSuccessToast("🚨 สินค้าในคลังสต๊อกมีไม่พอขาย", true);
                 return;
             }
@@ -504,10 +519,10 @@
             if(exist) {
                 exist.quantity += 1;
             } else {
-                cart.push({ barcode: p.barcode, name: p.name, price: parseFloat(p.price), quantity: 1 });
+                cart.push({ barcode: barcode, name: name, price: parseFloat(price), quantity: 1 });
             }
             updateCartUI();
-            showSuccessToast(`เพิ่ม "${p.name}" เข้าบิล`);
+            showSuccessToast(`เพิ่ม "${name}" เข้าบิล`);
         }
 
         function openUnpaidModal() {
