@@ -11,63 +11,24 @@
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" type="text/javascript"></script>
     <style>
         :root{
-            --paper:#FAF7EF;
-            --card:#FFFFFF;
-            --ink:#23241F;
-            --ink-soft:#7B7666;
-            --line:#E4DECB;
-            --till:#0F7B5C;
-            --till-deep:#0A5C44;
-            --till-pale:#E3F2EA;
-            --stamp:#BD3A2E;
-            --stamp-pale:#FBEAE7;
-            --amber:#D98A2B;
-            --amber-pale:#FBF0DF;
-            --blue:#2F5D8A;
-            --blue-pale:#E9F0F6;
-            --header:#1B1D17;
+            --paper:#FAF7EF; --card:#FFFFFF; --ink:#23241F; --ink-soft:#7B7666; --line:#E4DECB;
+            --till:#0F7B5C; --till-deep:#0A5C44; --till-pale:#E3F2EA; --stamp:#BD3A2E;
+            --stamp-pale:#FBEAE7; --amber:#D98A2B; --amber-pale:#FBF0DF; --blue:#2F5D8A;
+            --blue-pale:#E9F0F6; --header:#1B1D17;
         }
-        body{
-            font-family:'Sarabun','Plus Jakarta Sans',sans-serif;
-            background:var(--paper);
-            color:var(--ink);
-        }
+        body{ font-family:'Sarabun','Plus Jakarta Sans',sans-serif; background:var(--paper); color:var(--ink); }
         .font-display{ font-family:'Plus Jakarta Sans','Sarabun',sans-serif; }
         .font-receipt{ font-family:'JetBrains Mono',ui-monospace,monospace; }
-
         #reader button, #reader img { display: none !important; }
         #reader { border: none !important; }
         #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; image-rendering: -webkit-optimize-contrast !important; }
-
         @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes scanline { 0%{ top:10%; } 50%{ top:90%; } 100%{ top:10%; } }
         .animate-slide-up { animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
         .animate-scanline { animation: scanline 1.8s ease-in-out infinite; }
-
-        .tear-top-card{
-            height:11px;
-            background:
-                linear-gradient(135deg, transparent 50%, var(--card) 50%) 0 0/11px 11px repeat-x,
-                linear-gradient(45deg, transparent 50%, var(--card) 50%) 0 0/11px 11px repeat-x;
-            background-color:var(--header);
-        }
-        .dotted-leader{
-            flex:1 1 auto;
-            border-bottom:1.5px dotted var(--line);
-            margin:0 6px;
-            transform:translateY(-4px);
-        }
-        .ledger{
-            background:var(--header);
-            border-radius:14px;
-        }
-        .ledger-digits{
-            font-family:'JetBrains Mono',ui-monospace,monospace;
-            color:#5FE3A3;
-            letter-spacing:0.5px;
-        }
+        .dotted-leader{ flex:1 1 auto; border-bottom:1.5px dotted var(--line); margin:0 6px; transform:translateY(-4px); }
+        .ledger{ background:var(--header); border-radius:14px; }
+        .ledger-digits{ font-family:'JetBrains Mono',ui-monospace,monospace; color:#5FE3A3; letter-spacing:0.5px; }
         .key-btn { transition: transform .12s ease, opacity .12s ease; }
         .key-btn:active { transform: scale(0.94); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -101,16 +62,14 @@
     </div>
 
     <div class="max-w-md mx-auto p-4 space-y-4">
-
         <div class="rounded-2xl shadow-sm border overflow-hidden" style="background:var(--card); border-color:var(--line);">
             <div class="flex justify-between items-center px-4 py-2.5" style="background:var(--header);">
                 <div class="flex items-center space-x-1.5">
                     <span class="w-2 h-2 rounded-full animate-pulse" style="background:var(--amber);"></span>
-                    <span class="text-[10px] font-bold text-white/70 uppercase tracking-wider font-receipt">SCANNER</span>
+                    <span class="text-[10px] font-bold text-white/70 uppercase tracking-wider font-receipt">BARCODE SCANNER</span>
                 </div>
                 <button id="cameraToggleBtn" onclick="toggleCamera()" class="key-btn text-white text-[10px] font-bold px-3.5 py-1 rounded-full" style="background:var(--till);">📷 เปิดกล้อง</button>
             </div>
-            <div class="tear-top-card"></div>
             <div class="p-4 pt-2 space-y-2">
                 <div class="relative w-full bg-black rounded-xl overflow-hidden h-36 border shadow-inner flex items-center justify-center" style="border-color:var(--line);">
                     <div id="reader" class="w-full h-full"></div>
@@ -171,7 +130,7 @@
     </div>
 
     <div id="reportModal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center transition-all duration-300 p-0 sm:p-4" style="background:rgba(20,18,12,0.55); backdrop-filter:blur(6px);">
-        <div class="w-full max-w-md rounded-t-3xl sm:rounded-3xl max-h-[88vh] flex flex-col shadow-2xl animate-slide-up border" style="background:var(--card); border-color:var(--line);">
+        <div class="w-full max-w-md rounded-t-3xl sm:rounded-3xl max-h-[88vh] flex flex-col shadow-2xl border animate-slide-up" style="background:var(--card); border-color:var(--line);">
             <div class="p-4 border-b flex justify-between items-center rounded-t-3xl" style="border-color:var(--line); background:var(--paper);">
                 <h2 id="modalTitle" class="font-display font-extrabold text-sm tracking-tight" style="color:var(--ink);">รายงาน</h2>
                 <button onclick="closeModal()" class="w-8 h-8 rounded-full font-bold flex items-center justify-center text-sm" style="background:var(--line); color:var(--ink-soft);">✕</button>
@@ -239,7 +198,6 @@
             });
         }
 
-        // ---------- ระบบสแกนเนอร์รอบทิศทาง คมชัด ----------
         const SCAN_CONFIG = {
             fps: 22,
             qrbox: function(width, height) { return { width: Math.min(width * 0.85, 260), height: Math.min(height * 0.6, 110) }; },
@@ -259,14 +217,7 @@
             isProcessing = false;
             if (html5Qrcode) { try { await html5Qrcode.stop(); } catch(e) {} try { html5Qrcode.clear(); } catch(e) {} }
             html5Qrcode = new Html5Qrcode("reader", false);
-
-            let attempts = [
-                { facingMode: { exact: "environment" } },
-                { facingMode: { ideal: "environment" } },
-                { facingMode: "user" },
-                true
-            ];
-
+            let attempts = [ { facingMode: { exact: "environment" } }, { facingMode: { ideal: "environment" } }, { facingMode: "user" }, true ];
             for (const constraint of attempts) {
                 try {
                     await html5Qrcode.start(constraint, SCAN_CONFIG, onScanSuccess, () => {});
@@ -294,7 +245,6 @@
         function fetchProductData(bc) { 
             if(!bc) return; 
             document.getElementById('productName').value = "⏳ ค้นข้อมูลในแรมหน่วยความจำ..."; 
-            
             const matchedProduct = catalogProducts.find(p => String(p.barcode).trim() === String(bc).trim());
             if (matchedProduct) {
                 document.getElementById('productName').value = matchedProduct.name;
@@ -303,8 +253,7 @@
             } else {
                 fetch(`${WEB_APP_URL}?barcode=${bc}&_t=${Date.now()}`).then(r=>r.json()).then(d=>{ 
                     if(d.found){ 
-                        document.getElementById('productName').value = d.name; 
-                        document.getElementById('price').value = d.price; 
+                        document.getElementById('productName').value = d.name; document.getElementById('price').value = d.price; 
                     } else { 
                         document.getElementById('productName').value = "คลังไม่มีรหัสนี้ (สามารถพิมพ์ตั้งชื่อเองได้)"; 
                     } 
@@ -330,10 +279,7 @@
             list.innerHTML = cart.length ? html : `<p class="text-center py-6 text-xs font-medium" style="color:var(--ink-soft);">ยังไม่มีสินค้าในบิลนี้</p>`;
             document.getElementById('grand-total').innerText = total.toFixed(2) + " ฿";
             const btn = document.getElementById('checkoutBtn');
-            btn.disabled = !cart.length;
-            btn.style.background = cart.length ? "var(--till)" : "var(--line)";
-            btn.style.color = cart.length ? "#FFFFFF" : "#A8A28C";
-            btn.style.cursor = cart.length ? "pointer" : "not-allowed";
+            btn.disabled = !cart.length; btn.style.background = cart.length ? "var(--till)" : "var(--line)"; btn.style.color = cart.length ? "#FFFFFF" : "#A8A28C"; btn.style.cursor = cart.length ? "pointer" : "not-allowed";
         }
         function clearCart() { cart = []; updateCartUI(); }
         function submitOrder() { if(!cart.length) return; const cust = document.getElementById('customerName').value.trim(); const pay = document.getElementById('payment').value; if(pay === "ยังไม่ได้ชำระเงิน" && cust === "ทั่วไป") { showSuccessToast("กรุณาระบุชื่อคนติดหนี้ค้างจ่าย!", true); return; } document.getElementById('checkoutBtn').disabled = true; document.getElementById('checkoutBtn').innerText = "⏳ ระบบกำลังส่งข้อมูลเข้า Sheets..."; fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ payment: pay, customer: cust, items: cart }) }).then(() => { showSuccessToast("🎉 บันทึกปิดบิลเข้าคลังสำเร็จ!"); clearCart(); document.getElementById('customerName').value = "ทั่วไป"; preloadProductsData(false); }).finally(() => { document.getElementById('checkoutBtn').innerText = "🚀 ยืนยันปิดบิลและส่งข้อมูล"; updateCartUI(); }); }
@@ -426,11 +372,22 @@
                         </div>
                     `;
                 });
-                stockHtml += '</div>';
-                showModal("📦 รายการสินค้าคงเหลือในคลัง", stockHtml);
+                stockHtml += '</div>'; showModal("📦 รายการสินค้าคงเหลือในคลัง", stockHtml);
             } else {
                 showModal("📦 รายการสินค้าคงเหลือในคลัง", `<p class="text-center py-6" style="color:var(--ink-soft);">คลังข้อมูลว่างเปล่า กรุณากดปุ่ม "อัปเดตสต๊อก" ขวาสดด้านบน</p>`);
             }
+        }
+
+        // 🔥 ระบบความปลอดภัยขั้นสูง (Fallbacks Smart Search): ค้นหาคีย์เวิร์ดชื่ออัตโนมัติหากเรียกตัวแปร p.image จากชีทไม่เจอ
+        function generateAutoFallbackImage(productName) {
+            const clean = productName.toLowerCase();
+            let key = "groceries"; 
+            if (clean.includes("นม") || clean.includes("milk")) key = "milk";
+            else if (clean.includes("น้ำ") || clean.includes("water")) key = "water-bottle";
+            else if (clean.includes("ชา") || clean.includes("tea") || clean.includes("โออิชิ")) key = "greentea";
+            else if (clean.includes("ขนม") || clean.includes("เลย์") || clean.includes("snack")) key = "chips";
+            else if (clean.includes("กาแฟ") || clean.includes("coffee")) key = "coffee-can";
+            return `https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=150&q=80&sig=${encodeURIComponent(key)}`;
         }
 
         function openProductPickerModal() {
@@ -452,7 +409,7 @@
             renderCatalogList();
         }
 
-        // 🔥 ดึงรูปภาพตรงจากคอลัมน์ Image ใน Google Sheet มาแสดงผลในตารางเลือกซื้อ Grid View
+        // 🔥 แก้ไขโค้ดดึงภาพ: เพิ่มการเช็กโครงสร้างเชิงลึก (ดึงค่า p.image และ p.Image ได้ทุกลำดับคอลัมน์จาก JSON)
         function renderCatalogList() {
             const listEl = document.getElementById('catalogList');
             if (!listEl) return;
@@ -461,8 +418,11 @@
             catalogFiltered.forEach((p) => {
                 const isOut = p.stock <= 0;
                 
-                // 🛠️ ตรวจสอบลิงก์รูปภาพ: หากในคอลัมน์ของ Google Sheet ว่างเปล่าหรือไม่มีข้อมูล จะสลับไปแสดงรูปภาพกล่องสไตล์มินิมอลแทนอัตโนมัติเพื่อป้องกันไอคอนแตก
-                const finalImgUrl = p.image && String(p.image).trim() !== "" ? p.image : "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=150&q=80";
+                // ตรวจค้นหาตัวแปร Link รูปภาพแบบครอบคลุม (รองรับทั้งพิมพ์เล็ก พิมพ์ใหญ่ หรือดึงแบบ Fallback)
+                let sheetImgUrl = p.image || p.Image || p.IMAGE || "";
+                if (typeof sheetImgUrl === "string") sheetImgUrl = sheetImgUrl.trim();
+                
+                const finalImgUrl = sheetImgUrl !== "" ? sheetImgUrl : generateAutoFallbackImage(p.name);
                 
                 html += `
                     <div onclick="${isOut ? '' : `selectProductFromCatalog('${p.barcode}', '${p.name.replace(/'/g, "\\'")}', ${p.price}, ${p.stock})`}" 
@@ -470,7 +430,7 @@
                          style="border-color:${isOut ? 'rgba(189,58,46,0.25)' : 'var(--line)'}; opacity:${isOut ? '0.5' : '1'};">
                         
                         <div class="w-full h-24 rounded-xl overflow-hidden mb-2 bg-slate-50 relative border border-slate-100">
-                            <img src="${finalImgUrl}" alt="${p.name}" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=150&q=80'">
+                            <img src="${finalImgUrl}" alt="${p.name}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=150&q=80';">
                             <div class="absolute top-1 right-1 text-[8px] bg-black/60 text-white px-1.5 py-0.5 rounded font-receipt">คลัง: ${p.stock}</div>
                         </div>
                         
@@ -497,20 +457,13 @@
         function selectProductFromCatalog(barcode, name, price, stock) {
             playBeepSound();
             if (navigator.vibrate) navigator.vibrate(35);
-            
             const exist = cart.find(item => item.barcode === barcode);
             if(exist && exist.quantity >= stock) {
-                showSuccessToast("🚨 สินค้าในคลังสต๊อกมีไม่พอขาย", true);
-                return;
+                showSuccessToast("🚨 สินค้าในคลังสต๊อกมีไม่พอขาย", true); return;
             }
-
-            if(exist) {
-                exist.quantity += 1;
-            } else {
-                cart.push({ barcode: barcode, name: name, price: parseFloat(price), quantity: 1 });
-            }
-            updateCartUI();
-            showSuccessToast(`เพิ่ม "${name}" เข้าบิล`);
+            if(exist) { exist.quantity += 1; } 
+            else { cart.push({ barcode: barcode, name: name, price: parseFloat(price), quantity: 1 }); }
+            updateCartUI(); showSuccessToast(`เพิ่ม "${name}" เข้าบิล`);
         }
 
         function openUnpaidModal() {
