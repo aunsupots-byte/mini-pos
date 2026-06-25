@@ -153,6 +153,8 @@
 
         let cart = []; let html5Qrcode = null; let isCameraOpen = false; let audioCtx = null; let isProcessing = false;
         let catalogProducts = []; let catalogFiltered = [];
+        let historyCache = null; let cacheTimestamp = 0;
+        const CACHE_DURATION = 15000;
 
         function unlockAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
         function playBeepSound() { 
@@ -168,38 +170,25 @@
         function showSuccessToast(message, isError = false) {
             const toast = document.getElementById('successToast'); const icon = document.getElementById('toastIcon'); const title = document.getElementById('toastTitle'); const msgText = document.getElementById('toastMessage');
             msgText.innerText = message;
-            if(isError) { title.innerText = "เกิดข้อผิดพลาด"; icon.innerText = "❌"; icon.style.background = "var(--stamp)"; } 
-            else { title.innerText = "สำเร็จเสร็จสิ้น"; icon.innerText = "✓"; icon.style.background = "var(--till)"; }
+            if(isError) { title.innerText = "เกิดข้อผิดพลาด"; icon.style.backgroundColor = "var(--stamp)"; icon.innerText = "❌"; } 
+            else { title.innerText = "สำเร็จเสร็จสิ้น"; icon.style.backgroundColor = "var(--till)"; icon.innerText = "✓"; }
             toast.classList.remove('hidden'); setTimeout(() => { toast.classList.add('hidden'); }, 2500);
         }
-
-        // ---------- แคชประวัติการขายฝั่งหน้าเว็บ (ใช้ร่วมกันระหว่างเมนู "บัญชี" และ "ค้างจ่าย") ----------
-        // ทั้งสองเมนูอ่านข้อมูลชุดเดียวกันจาก action=getHistory การแคชไว้ชั่วคราวช่วยลดจำนวนครั้งที่ต้องยิงไปอ่าน Google Sheet
-        // และถ้ามีการเปิดสองเมนูนี้ไล่กันเร็ว ๆ จะใช้ request เดิมที่ยังโหลดอยู่ ไม่ยิงซ้ำซ้อน (in-flight de-dupe)
-        const HISTORY_CACHE_TTL_MS = 20000; // 20 วินาที
-        let historyCache = { data: null, ts: 0, inFlight: null };
-        function fetchHistoryCached(force) {
-            if (!force && historyCache.data && (Date.now() - historyCache.ts) < HISTORY_CACHE_TTL_MS) return Promise.resolve(historyCache.data);
-            if (!force && historyCache.inFlight) return historyCache.inFlight;
-            historyCache.inFlight = fetch(`${WEB_APP_URL}?action=getHistory&_t=${Date.now()}`).then(r => r.json()).then(data => { historyCache.data = data; historyCache.ts = Date.now(); historyCache.inFlight = null; return data; }).catch(err => { historyCache.inFlight = null; throw err; });
-            return historyCache.inFlight;
-        }
-        function invalidateHistoryCache() { historyCache.data = null; historyCache.ts = 0; }
 
         window.addEventListener('DOMContentLoaded', () => {
             const localCachedData = localStorage.getItem('pos_products_cache');
             if (localCachedData) {
-                catalogProducts = JSON.parse(localCachedData);
-                catalogFiltered = catalogProducts;
+                try {
+                    catalogProducts = JSON.parse(localCachedData);
+                    catalogFiltered = catalogProducts;
+                } catch(e) { localStorage.removeItem('pos_products_cache'); }
             }
             preloadProductsData(false);
-            // อุ่นแคชประวัติการขายไว้เงียบ ๆ หลังโหลดหน้าเสร็จ เพื่อให้เปิดเมนู "บัญชี" / "ค้างจ่าย" ครั้งแรกเร็วขึ้น
-            setTimeout(() => { fetchHistoryCached().catch(() => {}); }, 1500);
         });
 
         function preloadProductsData(forceNotify = false) {
             if (forceNotify) showSuccessToast("⏳ กำลังอัปเดตสต๊อกสินค้าล่าสุด...");
-            fetch(`${WEB_APP_URL}?action=getProductsData&_t=${Date.now()}`)
+            return fetch(`${WEB_APP_URL}?action=getProductsData&_t=${Date.now()}`)
             .then(r => r.json())
             .then(products => {
                 if (products && Array.isArray(products)) {
@@ -224,7 +213,7 @@
             isCameraOpen = true;
             document.getElementById('laser-line').classList.remove('hidden');
             document.getElementById('cameraToggleBtn').innerText = "🔴 ปิดกล้อง";
-            document.getElementById('cameraToggleBtn').style.background = "var(--stamp)";
+            document.getElementById('cameraToggleBtn').style.backgroundColor = "var(--stamp)";
             document.getElementById('scan-status').innerText = "🎯 เล็งบาร์โค้ด / QR Code ให้อยู่ในกรอบ";
         }
 
@@ -251,7 +240,7 @@
                 document.getElementById('laser-line').classList.add('hidden');
                 document.getElementById('reader').innerHTML = "";
                 document.getElementById('cameraToggleBtn').innerText = "📷 เปิดกล้อง";
-                document.getElementById('cameraToggleBtn').style.background = "var(--till)";
+                document.getElementById('cameraToggleBtn').style.backgroundColor = "var(--till)";
                 document.getElementById('scan-status').innerText = "💡 พร้อมใช้งานกล้องใหม่อีกครั้ง";
             }
         }
@@ -273,6 +262,8 @@
                     } else { 
                         document.getElementById('productName').value = "คลังไม่มีรหัสนี้ (สามารถพิมพ์ตั้งชื่อเองได้)"; 
                     } 
+                }).catch(()=>{
+                    document.getElementById('productName').value = "";
                 });
             }
         }
@@ -295,10 +286,10 @@
             list.innerHTML = cart.length ? html : `<p class="text-center py-6 text-xs font-medium" style="color:var(--ink-soft);">ยังไม่มีสินค้าในบิลนี้</p>`;
             document.getElementById('grand-total').innerText = total.toFixed(2) + " ฿";
             const btn = document.getElementById('checkoutBtn');
-            btn.disabled = !cart.length; btn.style.background = cart.length ? "var(--till)" : "var(--line)"; btn.style.color = cart.length ? "#FFFFFF" : "#A8A28C"; btn.style.cursor = cart.length ? "pointer" : "not-allowed";
+            btn.disabled = !cart.length; btn.style.backgroundColor = cart.length ? "var(--till)" : "var(--line)"; btn.style.color = cart.length ? "#FFFFFF" : "#A8A28C"; btn.style.cursor = cart.length ? "pointer" : "not-allowed";
         }
         function clearCart() { cart = []; updateCartUI(); }
-        function submitOrder() { if(!cart.length) return; const cust = document.getElementById('customerName').value.trim(); const pay = document.getElementById('payment').value; if(pay === "ยังไม่ได้ชำระเงิน" && cust === "ทั่วไป") { showSuccessToast("กรุณาระบุชื่อคนติดหนี้ค้างจ่าย!", true); return; } document.getElementById('checkoutBtn').disabled = true; document.getElementById('checkoutBtn').innerText = "⏳ ระบบกำลังส่งข้อมูลเข้า Sheets..."; fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ payment: pay, customer: cust, items: cart }) }).then(() => { showSuccessToast("🎉 บันทึกปิดบิลเข้าคลังสำเร็จ!"); clearCart(); document.getElementById('customerName').value = "ทั่วไป"; preloadProductsData(false); invalidateHistoryCache(); }).finally(() => { document.getElementById('checkoutBtn').innerText = "🚀 ยืนยันปิดบิลและส่งข้อมูล"; updateCartUI(); }); }
+        function submitOrder() { if(!cart.length) return; const cust = document.getElementById('customerName').value.trim(); const pay = document.getElementById('payment').value; if(pay === "ยังไม่ได้ชำระเงิน" && cust === "ทั่วไป") { showSuccessToast("กรุณาระบุชื่อคนติดหนี้ค้างจ่าย!", true); return; } document.getElementById('checkoutBtn').disabled = true; document.getElementById('checkoutBtn').innerText = "⏳ ระบบกำลังส่งข้อมูลเข้า Sheets..."; fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ payment: pay, customer: cust, items: cart }) }).then(() => { showSuccessToast("🎉 บันทึกปิดบิลเข้าคลังสำเร็จ!"); clearCart(); invalidateHistoryCache(); document.getElementById('customerName').value = "ทั่วไป"; preloadProductsData(false); }).finally(() => { document.getElementById('checkoutBtn').innerText = "🚀 ยืนยันปิดบิลและส่งข้อมูล"; updateCartUI(); }); }
 
         function openAddProductModal() {
             let html = `<div class="space-y-4 p-1">
@@ -321,23 +312,19 @@
             fetch(WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: productData.toString(), mode: 'no-cors' }).then(() => { showSuccessToast("🎉 เพิ่มสินค้าลงคลังเรียบร้อย!"); closeModal(); preloadProductsData(false); }).finally(() => { document.getElementById('saveProductBtn').disabled = false; document.getElementById('saveProductBtn').innerText = "💾 บันทึกสินค้าลงคลังแผ่นงาน"; });
         }
 
-        // 🔥 ซ่อมแซมระบบประวัติยอดขาย: เพิ่มระบบดักจับ (Catch) หากเชื่อมต่อไม่ได้หรือสูตรวันเวลาผิดพลาด ให้แจกแจงแจ้งเตือนชัดเจน
+        function getHistoryData() {
+            const now = Date.now();
+            if (historyCache && (now - cacheTimestamp < CACHE_DURATION)) { return Promise.resolve(historyCache); }
+            return fetch(`${WEB_APP_URL}?action=getHistory&_t=${now}`).then(r => r.json()).then(data => { historyCache = data; cacheTimestamp = Date.now(); return data; });
+        }
+        function invalidateHistoryCache() { historyCache = null; cacheTimestamp = 0; }
+
         function openHistoryModal() {
             showModal("📊 รายงานสรุปยอดขายรายวัน", `<p class="text-center py-4 font-medium animate-pulse" style="color:var(--ink-soft);">⏳ กำลังเชื่อมต่อแผ่นงานหลังบ้าน...</p>`);
-            
-            fetchHistoryCached()
-            .then(data => {
-                if(!data || data.length === 0) {
-                    document.getElementById('modalContent').innerHTML = `<p class="text-center py-6 font-bold text-amber-600">❌ ไม่พบประวัติการขายใดๆ ในแผ่นงานหลังบ้าน</p>`;
-                    return;
-                }
-                
+            getHistoryData().then(data => {
+                if(!data || data.length === 0) { document.getElementById('modalContent').innerHTML = `<p class="text-center py-6 font-bold text-amber-600">❌ ไม่พบประวัติการขายใดๆ ในแผ่นงานหลังบ้าน</p>`; return; }
                 const dailyTotals = {}; const dailyItems = {};
-                data.forEach(i => { 
-                    if(!dailyTotals[i.date]) { dailyTotals[i.date] = 0; dailyItems[i.date] = []; } 
-                    dailyTotals[i.date] += i.total; dailyItems[i.date].push(i); 
-                });
-                
+                data.forEach(i => { if(!dailyTotals[i.date]) { dailyTotals[i.date] = 0; dailyItems[i.date] = []; } dailyTotals[i.date] += i.total; dailyItems[i.date].push(i); });
                 let html = '<div class="space-y-3 max-h-[72vh] overflow-y-auto pr-1">'; let dayIndex = 0;
                 for(const date in dailyTotals) {
                     dayIndex++;
@@ -371,9 +358,8 @@
                     });
                     html += `</div></div>`;
                 }
-                html += '</div>'; 
-                document.getElementById('modalContent').innerHTML = dayIndex > 0 ? html : `<p class="text-center py-6" style="color:var(--ink-soft);">ไม่มีข้อมูลประวัติยอดขาย</p>`;
-            }).catch(err => {
+                html += '</div>'; document.getElementById('modalContent').innerHTML = dayIndex > 0 ? html : `<p class="text-center py-6" style="color:var(--ink-soft);">ไม่มีข้อมูลประวัติยอดขาย</p>`;
+            }).catch(() => {
                 document.getElementById('modalContent').innerHTML = `<p class="text-center py-6 font-bold text-red-600">❌ ดึงรายงานขัดข้อง กรุณาตรวจสอบชื่อหน้าชีท Sales หลังบ้าน</p>`;
             });
         }
@@ -410,78 +396,91 @@
             }
         }
 
-        // ---------- ระบบรูปภาพสินค้า ----------
-        // ดึงรูปจากชีท Products คอลัมน์ E ที่ตั้งชื่อหัวคอลัมน์ว่า "Image" (ดังนั้น Apps Script จะส่งกลับมาเป็น p.Image)
-        // ถ้าเป็นลิงก์แชร์จาก Google Drive (รูปแบบ .../file/d/FILE_ID/view) จะแปลงเป็นลิงก์โหลดรูปตรง (thumbnail) ให้อัตโนมัติ
-        // เพราะลิงก์แชร์ปกติของ Drive ใช้กับ <img> ไม่ได้ และเป็นสาเหตุหลักที่รูปไม่ขึ้น
-        // ถ้าคอลัมน์ Image ว่าง หรือรูปโหลดไม่ขึ้นจริง ๆ จะแสดง "ชื่อสินค้า" เป็นตัวหนังสือแทนช่องรูปนั้นเลย
-// ฟังก์ชันวิเคราะห์และแปลงลิงก์รูปภาพ Google Drive เป็น Direct Link
-function resolveProductImageUrl(p) {
-    let rawUrl = p.Image || ""; // อ่านเฉพาะคีย์ Image พิมพ์ใหญ่ตามหัวคอลัมน์ E
-    if (typeof rawUrl === "string") {
-        rawUrl = rawUrl.trim();
-    } else {
-        return "";
-    }
-    // ถ้าเป็นลิงก์แชร์จาก Google Drive จะดึง FILE_ID มาทำลิงก์โหลดรูปตรงให้ทันที
-    if (rawUrl.includes("drive.google.com")) {
-        let parts = rawUrl.split('/d/');
-        if (parts.length > 1) {
-            let fileId = parts[1].split('/')[0];
-            return "https://drive.google.com/uc?export=view&id=" + fileId;
+        // 🔥 แก้ไขระบบดึงรูปภาพ: เพิ่มการเช็กคีย์ p.Image (พิมพ์ใหญ่) และแปลงลิงก์ Google Drive
+        function resolveProductImageUrl(p) {
+            let rawUrl = p.Image || p.image || ""; 
+            if (typeof rawUrl === "string") {
+                rawUrl = rawUrl.trim();
+            } else {
+                return "";
+            }
+            if (rawUrl.includes("drive.google.com")) {
+                let parts = rawUrl.split('/d/');
+                if (parts.length > 1) {
+                    let fileId = parts[1].split('/')[0];
+                    return "https://drive.google.com/uc?export=view&id=" + fileId;
+                }
+            }
+            return rawUrl;
         }
-    }
-    return rawUrl; // ลิงก์เว็บทั่วไปส่งค่ากลับตรงๆ
-}
 
-function renderCatalogList() {
-    const listEl = document.getElementById('catalogList');
-    if (!listEl) return;
-    if (!catalogFiltered.length) { 
-        listEl.innerHTML = `<p class="col-span-2 text-center py-6 text-xs" style="color:var(--ink-soft);">ไม่พบสินค้าในฐานความจำ</p>`; 
-        return; 
-    }
-    let html = "";
-    
-    catalogFiltered.forEach((p) => {
-        const isOut = p.stock <= 0;
+        function generateAutoFallbackImage(productName) {
+            const clean = String(productName).toLowerCase();
+            let key = "box"; 
+            if (clean.includes("นม") || clean.includes("milk")) key = "milk-carton";
+            else if (clean.includes("น้ำ") || clean.includes("water")) key = "water-bottle";
+            else if (clean.includes("ชา") || clean.includes("tea") || clean.includes("โออิชิ")) key = "iced-tea";
+            else if (clean.includes("ขนม") || clean.includes("เลย์") || clean.includes("snack")) key = "chips";
+            else if (clean.includes("กาแฟ") || clean.includes("coffee")) key = "coffee-can";
+            return `https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=150&q=80&sig=${encodeURIComponent(key)}`;
+        }
+
+        function openProductPickerModal() { catalogFiltered = catalogProducts; renderCatalogModal(); }
         
-        // 🟢 เรียกฟังก์ชันดึงและแปลงลิงก์รูปภาพ
-        const finalImgUrl = resolveProductImageUrl(p);
-        
-        html += `
-            <div onclick="${isOut ? '' : `selectProductFromCatalog('${p.barcode}', '${p.name.replace(/'/g, "\\'")}', ${p.price}, ${p.stock})`}" 
-                 class="key-btn p-2.5 rounded-2xl shadow-sm flex flex-col justify-between border cursor-pointer active:opacity-70 bg-white" 
-                 style="border-color:${isOut ? 'rgba(189,58,46,0.25)' : 'var(--line)'}; opacity:${isOut ? '0.5' : '1'};">
+        function renderCatalogModal() {
+            const wrap = `
+                <div class="space-y-3">
+                    <input type="text" id="catalogSearch" oninput="filterCatalog(this.value)" placeholder="🔎 ค้นหาชื่อสินค้าหรือบาร์โค้ด..." class="w-full p-3 rounded-xl text-sm font-bold" style="background:var(--paper); border:1px solid var(--line); color:var(--ink);">
+                    <p class="text-[10px] font-medium" style="color:var(--ink-soft);">แตะเลือกการ์ดสินค้าเพื่อเพิ่มยอดลงในบิลขายหน้าร้านได้ทันที</p>
+                    <div id="catalogList" class="grid grid-cols-2 gap-2.5 max-h-[58vh] overflow-y-auto pr-1 no-scrollbar"></div>
+                </div>
+            `;
+            document.getElementById('reportModal').classList.remove('hidden');
+            document.getElementById('modalTitle').innerText = "🛍️ เลือกสินค้าจากคลัง";
+            document.getElementById('modalContent').innerHTML = wrap;
+            renderCatalogList();
+        }
+
+        // 🔥 ซ่อมแซมบั๊กใหญ่: แก้ไขจาก p.Name (พังค้าง) มาเป็น p.name (ถูกต้อง) เมนูกดเปิดได้ทันทีชัวร์ 100%
+        function renderCatalogList() {
+            const listEl = document.getElementById('catalogList'); if (!listEl) return;
+            if (!catalogFiltered.length) { listEl.innerHTML = `<p class="col-span-2 text-center py-6 text-xs" style="color:var(--ink-soft);">ไม่พบสินค้าในฐานความจำ</p>`; return; }
+            let html = "";
+            catalogFiltered.forEach((p) => {
+                const isOut = p.stock <= 0;
+                const finalImgUrl = resolveProductImageUrl(p);
                 
-                <div class="w-full h-24 rounded-xl overflow-hidden mb-2 bg-slate-100 relative border flex items-center justify-center text-center p-2">
-                    
-                    ${finalImgUrl !== "" ? 
-                        `<img src="${finalImgUrl}" alt="${p.name}" class="w-full h-full object-cover" 
-                              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` 
-                        : ''
-                    }
-                    
-                    <div class="${finalImgUrl !== "" ? 'hidden' : 'flex'} w-full h-full items-center justify-center font-bold text-xs text-slate-500 bg-slate-200 rounded-lg p-1 uppercase">
-                        ${p.name}
+                // 🛠️ ซ่อมแซมคำสั่งจุดนี้เรียบร้อยแล้ว (เปลี่ยนจาก p.Name เป็น p.name)
+                const safeName = p.name ? p.name.replace(/'/g, "\\'") : "";
+                const fallbackImg = generateAutoFallbackImage(p.name || "");
+                
+                html += `
+                    <div onclick="${isOut ? '' : `selectProductFromCatalog('${p.barcode}', '${safeName}', ${p.price}, ${p.stock})`}" 
+                         class="key-btn p-2.5 rounded-2xl shadow-sm flex flex-col justify-between border cursor-pointer active:opacity-70 bg-white" 
+                         style="border-color:${isOut ? 'rgba(189,58,46,0.25)' : 'var(--line)'}; opacity:${isOut ? '0.5' : '1'};">
+                        <div class="w-full h-24 rounded-xl overflow-hidden mb-2 bg-slate-100 relative border border-slate-100 flex items-center justify-center text-center p-2">
+                            ${finalImgUrl !== "" ? 
+                                `<img src="${finalImgUrl}" alt="${p.name}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` 
+                                : ''
+                            }
+                            <div class="${finalImgUrl !== "" ? 'hidden' : 'flex'} w-full h-full items-center justify-center font-bold text-xs text-slate-500 bg-slate-200 rounded-lg p-1 uppercase">
+                                ${p.name}
+                            </div>
+                            <div class="absolute top-1 right-1 text-[8px] bg-black/60 text-white px-1.5 py-0.5 rounded font-receipt">คลัง: ${p.stock}</div>
+                        </div>
+                        <div class="space-y-0.5 min-w-0">
+                            <div class="font-bold text-[11px] truncate" style="color:var(--ink);">${p.name}</div>
+                            <div class="text-[9px] font-receipt truncate" style="color:var(--ink-soft);">${p.barcode}</div>
+                        </div>
+                        <div class="flex justify-between items-center mt-1.5 pt-1 border-t border-dashed" style="border-color:var(--line);">
+                            <span class="font-receipt font-bold text-xs" style="color:var(--blue);">${p.price.toFixed(2)} ฿</span>
+                            <span class="text-[9px] font-bold text-emerald-700">${isOut ? 'หมด' : 'เลือก ➕'}</span>
+                        </div>
                     </div>
-                    
-                    <div class="absolute top-1 right-1 text-[8px] bg-black/60 text-white px-1.5 py-0.5 rounded font-receipt">คลัง: ${p.stock}</div>
-                </div>
-                
-                <div class="space-y-0.5 min-w-0">
-                    <div class="font-bold text-[11px] truncate" style="color:var(--ink);">${p.name}</div>
-                    <div class="text-[9px] font-receipt truncate" style="color:var(--ink-soft);">${p.barcode}</div>
-                </div>
-                <div class="flex justify-between items-center mt-1.5 pt-1 border-t border-dashed" style="border-color:var(--line);">
-                    <span class="font-receipt font-bold text-xs" style="color:var(--blue);">${p.price.toFixed(2)} ฿</span>
-                    <span class="text-[9px] font-bold text-emerald-700">${isOut ? 'หมด' : 'เลือก ➕'}</span>
-                </div>
-            </div>
-        `;
-    });
-    listEl.innerHTML = html;
-}
+                `;
+            });
+            listEl.innerHTML = html;
+        }
 
         function filterCatalog(query) {
             const q = query.trim().toLowerCase();
@@ -497,24 +496,12 @@ function renderCatalogList() {
             updateCartUI(); showSuccessToast(`เพิ่ม "${name}" เข้าบิล`);
         }
 
-        // 🔥 ซ่อมแซมระบบดึงรายชื่อคนติดหนี้ค้างจ่ายเงิน: ดักจับข้อผิดพลาดป้องกันโมดอลค้างขาวโพลน
         function openUnpaidModal() {
             showModal("🚨 รายชื่อลูกค้าค้างจ่ายเงิน", `<p class="text-center py-4 font-medium animate-pulse" style="color:var(--ink-soft);">⏳ กำลังรวบรวมบิลคงค้าง...</p>`); 
-            
-            fetchHistoryCached()
-            .then(data => {
+            getHistoryData().then(data => {
                 const unpaid = data.filter(i => i.payment === "ยังไม่ได้ชำระเงิน" || i.payment === "ค้างจ่าย");
-                if(!unpaid || unpaid.length === 0) {
-                    document.getElementById('modalContent').innerHTML = `<p class="text-center py-6 font-bold text-emerald-600">🎉 ยอดเยี่ยม! ไม่พบยอดหนี้ค้างชำระเงินหน้าร้านในขณะนี้</p>`;
-                    return;
-                }
-                
-                const debts = {}; 
-                unpaid.forEach(i => { 
-                    if(!debts[i.customer]) debts[i.customer] = {total:0, list:[]}; 
-                    debts[i.customer].total += i.total; debts[i.customer].list.push(i); 
-                });
-                
+                if(!unpaid || unpaid.length === 0) { document.getElementById('modalContent').innerHTML = `<p class="text-center py-6 font-bold text-emerald-600">🎉 ยอดเยี่ยม! ไม่พบยอดหนี้ค้างชำระเงินหน้าร้านในขณะนี้</p>`; return; }
+                const debts = {}; unpaid.forEach(i => { if(!debts[i.customer]) debts[i.customer] = {total:0, list:[]}; debts[i.customer].total += i.total; debts[i.customer].list.push(i); });
                 let html = ""; let customerIndex = 0;
                 for(const c in debts) {
                     customerIndex++;
@@ -529,13 +516,11 @@ function renderCatalogList() {
                             </div>
                             <div class="text-[10px] pt-2.5 space-y-2 max-h-[40vh] overflow-y-auto" style="color:var(--ink-soft);">
                     `;
-                    debts[c].list.forEach(i => { 
-                        html += `<div class="flex justify-between items-center p-2.5 rounded-xl border font-medium" style="background:var(--card); border-color:var(--line);"><span style="color:var(--ink);">• ${i.name} (x${i.quantity})</span><span class="font-receipt font-bold" style="color:var(--ink);">${i.total.toFixed(2)} ฿</span></div>`; 
-                    });
+                    debts[c].list.forEach(i => { html += `<div class="flex justify-between items-center p-2.5 rounded-xl border font-medium" style="background:var(--card); border-color:var(--line);"><span style="color:var(--ink);">• ${i.name} (x${i.quantity})</span><span class="font-receipt font-bold" style="color:var(--ink);">${i.total.toFixed(2)} ฿</span></div>`; });
                     html += `</div></div>`;
                 }
                 document.getElementById('modalContent').innerHTML = html;
-            }).catch(err => {
+            }).catch(() => {
                 document.getElementById('modalContent').innerHTML = `<p class="text-center py-6 font-bold text-red-600">❌ ไม่สามารถดึงรายชื่อผู้ค้างชำระได้ เนื่องจากโครงสร้างไฟล์ Sales หลังบ้านไม่สมบูรณ์</p>`;
             });
         }
