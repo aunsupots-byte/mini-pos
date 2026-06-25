@@ -173,6 +173,19 @@
             toast.classList.remove('hidden'); setTimeout(() => { toast.classList.add('hidden'); }, 2500);
         }
 
+        // ---------- แคชประวัติการขายฝั่งหน้าเว็บ (ใช้ร่วมกันระหว่างเมนู "บัญชี" และ "ค้างจ่าย") ----------
+        // ทั้งสองเมนูอ่านข้อมูลชุดเดียวกันจาก action=getHistory การแคชไว้ชั่วคราวช่วยลดจำนวนครั้งที่ต้องยิงไปอ่าน Google Sheet
+        // และถ้ามีการเปิดสองเมนูนี้ไล่กันเร็ว ๆ จะใช้ request เดิมที่ยังโหลดอยู่ ไม่ยิงซ้ำซ้อน (in-flight de-dupe)
+        const HISTORY_CACHE_TTL_MS = 20000; // 20 วินาที
+        let historyCache = { data: null, ts: 0, inFlight: null };
+        function fetchHistoryCached(force) {
+            if (!force && historyCache.data && (Date.now() - historyCache.ts) < HISTORY_CACHE_TTL_MS) return Promise.resolve(historyCache.data);
+            if (!force && historyCache.inFlight) return historyCache.inFlight;
+            historyCache.inFlight = fetch(`${WEB_APP_URL}?action=getHistory&_t=${Date.now()}`).then(r => r.json()).then(data => { historyCache.data = data; historyCache.ts = Date.now(); historyCache.inFlight = null; return data; }).catch(err => { historyCache.inFlight = null; throw err; });
+            return historyCache.inFlight;
+        }
+        function invalidateHistoryCache() { historyCache.data = null; historyCache.ts = 0; }
+
         window.addEventListener('DOMContentLoaded', () => {
             const localCachedData = localStorage.getItem('pos_products_cache');
             if (localCachedData) {
@@ -180,6 +193,8 @@
                 catalogFiltered = catalogProducts;
             }
             preloadProductsData(false);
+            // อุ่นแคชประวัติการขายไว้เงียบ ๆ หลังโหลดหน้าเสร็จ เพื่อให้เปิดเมนู "บัญชี" / "ค้างจ่าย" ครั้งแรกเร็วขึ้น
+            setTimeout(() => { fetchHistoryCached().catch(() => {}); }, 1500);
         });
 
         function preloadProductsData(forceNotify = false) {
@@ -283,7 +298,7 @@
             btn.disabled = !cart.length; btn.style.background = cart.length ? "var(--till)" : "var(--line)"; btn.style.color = cart.length ? "#FFFFFF" : "#A8A28C"; btn.style.cursor = cart.length ? "pointer" : "not-allowed";
         }
         function clearCart() { cart = []; updateCartUI(); }
-        function submitOrder() { if(!cart.length) return; const cust = document.getElementById('customerName').value.trim(); const pay = document.getElementById('payment').value; if(pay === "ยังไม่ได้ชำระเงิน" && cust === "ทั่วไป") { showSuccessToast("กรุณาระบุชื่อคนติดหนี้ค้างจ่าย!", true); return; } document.getElementById('checkoutBtn').disabled = true; document.getElementById('checkoutBtn').innerText = "⏳ ระบบกำลังส่งข้อมูลเข้า Sheets..."; fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ payment: pay, customer: cust, items: cart }) }).then(() => { showSuccessToast("🎉 บันทึกปิดบิลเข้าคลังสำเร็จ!"); clearCart(); document.getElementById('customerName').value = "ทั่วไป"; preloadProductsData(false); }).finally(() => { document.getElementById('checkoutBtn').innerText = "🚀 ยืนยันปิดบิลและส่งข้อมูล"; updateCartUI(); }); }
+        function submitOrder() { if(!cart.length) return; const cust = document.getElementById('customerName').value.trim(); const pay = document.getElementById('payment').value; if(pay === "ยังไม่ได้ชำระเงิน" && cust === "ทั่วไป") { showSuccessToast("กรุณาระบุชื่อคนติดหนี้ค้างจ่าย!", true); return; } document.getElementById('checkoutBtn').disabled = true; document.getElementById('checkoutBtn').innerText = "⏳ ระบบกำลังส่งข้อมูลเข้า Sheets..."; fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ payment: pay, customer: cust, items: cart }) }).then(() => { showSuccessToast("🎉 บันทึกปิดบิลเข้าคลังสำเร็จ!"); clearCart(); document.getElementById('customerName').value = "ทั่วไป"; preloadProductsData(false); invalidateHistoryCache(); }).finally(() => { document.getElementById('checkoutBtn').innerText = "🚀 ยืนยันปิดบิลและส่งข้อมูล"; updateCartUI(); }); }
 
         function openAddProductModal() {
             let html = `<div class="space-y-4 p-1">
@@ -310,8 +325,7 @@
         function openHistoryModal() {
             showModal("📊 รายงานสรุปยอดขายรายวัน", `<p class="text-center py-4 font-medium animate-pulse" style="color:var(--ink-soft);">⏳ กำลังเชื่อมต่อแผ่นงานหลังบ้าน...</p>`);
             
-            fetch(`${WEB_APP_URL}?action=getHistory&_t=${Date.now()}`)
-            .then(r => r.json())
+            fetchHistoryCached()
             .then(data => {
                 if(!data || data.length === 0) {
                     document.getElementById('modalContent').innerHTML = `<p class="text-center py-6 font-bold text-amber-600">❌ ไม่พบประวัติการขายใดๆ ในแผ่นงานหลังบ้าน</p>`;
@@ -396,15 +410,33 @@
             }
         }
 
-        function generateAutoFallbackImage(productName) {
-            const clean = String(productName).toLowerCase();
-            let key = "box"; 
-            if (clean.includes("นม") || clean.includes("milk")) key = "milk-carton";
-            else if (clean.includes("น้ำ") || clean.includes("water")) key = "water-bottle";
-            else if (clean.includes("ชา") || clean.includes("tea") || clean.includes("โออิชิ")) key = "iced-tea";
-            else if (clean.includes("ขนม") || clean.includes("เลย์") || clean.includes("snack")) key = "chips";
-            else if (clean.includes("กาแฟ") || clean.includes("coffee")) key = "coffee-can";
-            return `https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=150&q=80&sig=${encodeURIComponent(key)}`;
+        // ---------- ระบบรูปภาพสินค้า ----------
+        // 1) resolveProductImageUrl: ดึง URL รูปจาก Google Sheet จากชื่อคอลัมน์ที่พบบ่อยหลายแบบ และถ้าเป็นลิงก์แชร์จาก
+        //    Google Drive (รูปแบบ .../file/d/FILE_ID/view) จะแปลงเป็นลิงก์โหลดรูปตรง (thumbnail) ให้อัตโนมัติ
+        //    เพราะลิงก์แชร์ปกติของ Drive ใช้กับ <img> ไม่ได้ และเป็นสาเหตุหลักที่รูปไม่ขึ้น
+        // 2) generateAutoFallbackImage: ถ้าไม่มีรูปจริงหรือรูปโหลดไม่ขึ้น จะสร้างรูป placeholder เป็น SVG ในตัวเครื่องทันที
+        //    (ไม่พึ่งพาเซิร์ฟเวอร์ภายนอกเลย) จึงไม่มีทางขึ้น "รูปหาย" หรือค้างโหลดอีก และแต่ละสินค้าจะได้สีต่างกันตามชื่อ/บาร์โค้ด
+        function resolveProductImageUrl(p) {
+            const keys = ['image','Image','IMAGE','imageUrl','ImageUrl','imageURL','ImageURL','image_url','Image_URL','img','Img','photo','Photo','picture','Picture','pic','Pic'];
+            let raw = "";
+            for (const k of keys) { if (p[k] && String(p[k]).trim() !== "") { raw = String(p[k]).trim(); break; } }
+            if (!raw) return null;
+            const driveMatch = raw.match(/drive\.google\.com\/(?:file\/d\/|open\?id=)([a-zA-Z0-9_-]+)/);
+            if (driveMatch && driveMatch[1]) { return `https://drive.google.com/thumbnail?id=${driveMatch[1]}&sz=w400`; }
+            if (!/^https?:\/\//i.test(raw)) return null;
+            return raw;
+        }
+
+        function escapeSvgText(str) { return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+        function generateAutoFallbackImage(productName, seedKey) {
+            const palette = ['#0F7B5C','#2F5D8A','#D98A2B','#BD3A2E','#7B6CA8','#1B7F8C'];
+            const seedStr = String(seedKey || productName || "?");
+            let hash = 0; for (let i = 0; i < seedStr.length; i++) { hash = (hash * 31 + seedStr.charCodeAt(i)) >>> 0; }
+            const color = palette[hash % palette.length];
+            const initials = escapeSvgText(String(productName || "?").trim().slice(0, 2) || "?");
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="100%" height="100%" fill="${color}"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="64" fill="#ffffff" font-weight="700">${initials}</text></svg>`;
+            return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
         }
 
         function openProductPickerModal() { catalogFiltered = catalogProducts; renderCatalogModal(); }
@@ -428,14 +460,14 @@
             let html = "";
             catalogFiltered.forEach((p) => {
                 const isOut = p.stock <= 0;
-                let sheetImgUrl = p.image || p.Image || "";
-                const finalImgUrl = (sheetImgUrl && sheetImgUrl.trim() !== "") ? sheetImgUrl.trim() : generateAutoFallbackImage(p.name);
+                const safeName = String(p.name).replace(/'/g, "\\'");
+                const finalImgUrl = resolveProductImageUrl(p) || generateAutoFallbackImage(p.name, p.barcode);
                 html += `
-                    <div onclick="${isOut ? '' : `selectProductFromCatalog('${p.barcode}', '${p.name.replace(/'/g, "\\'")}', ${p.price}, ${p.stock})`}" 
+                    <div onclick="${isOut ? '' : `selectProductFromCatalog('${p.barcode}', '${safeName}', ${p.price}, ${p.stock})`}" 
                          class="key-btn p-2.5 rounded-2xl shadow-sm flex flex-col justify-between border cursor-pointer active:opacity-70 bg-white" 
                          style="border-color:${isOut ? 'rgba(189,58,46,0.25)' : 'var(--line)'}; opacity:${isOut ? '0.5' : '1'};">
                         <div class="w-full h-24 rounded-xl overflow-hidden mb-2 bg-slate-50 relative border border-slate-100">
-                            <img src="${finalImgUrl}" alt="${p.name}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src=generateAutoFallbackImage('${p.name.replace(/'/g, "\\'")}');">
+                            <img src="${finalImgUrl}" alt="${p.name}" class="w-full h-full object-cover" loading="lazy" onerror="this.onerror=null; this.src=generateAutoFallbackImage('${safeName}', '${p.barcode}');">
                             <div class="absolute top-1 right-1 text-[8px] bg-black/60 text-white px-1.5 py-0.5 rounded font-receipt">คลัง: ${p.stock}</div>
                         </div>
                         <div class="space-y-0.5 min-w-0">
@@ -470,8 +502,7 @@
         function openUnpaidModal() {
             showModal("🚨 รายชื่อลูกค้าค้างจ่ายเงิน", `<p class="text-center py-4 font-medium animate-pulse" style="color:var(--ink-soft);">⏳ กำลังรวบรวมบิลคงค้าง...</p>`); 
             
-            fetch(`${WEB_APP_URL}?action=getHistory&_t=${Date.now()}`)
-            .then(r => r.json())
+            fetchHistoryCached()
             .then(data => {
                 const unpaid = data.filter(i => i.payment === "ยังไม่ได้ชำระเงิน" || i.payment === "ค้างจ่าย");
                 if(!unpaid || unpaid.length === 0) {
@@ -514,6 +545,7 @@
             const targetBox = document.getElementById(`debt-box-${boxIndex}`);
             if (targetBox) { targetBox.style.opacity = '0'; targetBox.style.transform = 'scale(0.95)'; setTimeout(() => { targetBox.remove(); if(document.querySelectorAll('[id^="debt-box-"]').length === 0) { document.getElementById('modalContent').innerHTML = `<p class="text-center py-6" style="color:var(--ink-soft);">🎉 ไม่พบยอดค้างชำระเงิน</p>`; } }, 300); }
             showSuccessToast(`💸 เคลียร์หนี้ คุณ ${customerName} สำเร็จ!`);
+            invalidateHistoryCache();
             const formDetails = new URLSearchParams(); formDetails.append('action', 'clearCustomerDebt'); formDetails.append('customerName', customerName);
             fetch(WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formDetails.toString(), mode: 'no-cors' }).then(() => { setTimeout(() => { preloadProductsData(false); }, 1000); });
         }
