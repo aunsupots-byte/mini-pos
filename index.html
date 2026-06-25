@@ -186,6 +186,7 @@
             preloadProductsData(false);
         });
 
+        // 🔥 แก้ไขระบบดึงข้อมูล: สั่งบังคับเรนเดอร์หน้าจอใหม่ทันทีที่ข้อมูลล่าสุดส่งมาถึง เพื่อให้เมนู สต๊อก และ เลือกสินค้า อัปเดตตรงกับใน Sheets ตลอดเวลา
         function preloadProductsData(forceNotify = false) {
             if (forceNotify) showSuccessToast("⏳ กำลังอัปเดตสต๊อกสินค้าล่าสุด...");
             return fetch(`${WEB_APP_URL}?action=getProductsData&_t=${Date.now()}`)
@@ -196,7 +197,16 @@
                     catalogFiltered = products;
                     localStorage.setItem('pos_products_cache', JSON.stringify(products));
                     if (forceNotify) showSuccessToast("🟢 อัปเดตข้อมูลคลังสินค้าสำเร็จแล้ว");
-                    if (document.getElementById('catalogList')) renderCatalogList();
+                    
+                    // 🟢 สั่งวาดข้อมูลหน้าจอปัจจุบันใหม่ทันทีเมื่อ Sheets มีการเปลี่ยนแปลง
+                    if (document.getElementById('catalogList')) {
+                        renderCatalogList();
+                    }
+                    // ถ้าโมดอลเปิดดูสต๊อกค้างอยู่ ให้รีเฟรชข้อมูลสต๊อกในโมดอลด้วย
+                    const modalTitleEl = document.getElementById('modalTitle');
+                    if (modalTitleEl && modalTitleEl.innerText.includes("สต๊อก") && !document.getElementById('reportModal').classList.contains('hidden')) {
+                        openStockModal(); 
+                    }
                 }
             }).catch(err => {
                 if (forceNotify) showSuccessToast("🟢 ดึงแคชสินค้าหน้าร้านเรียบร้อย");
@@ -305,7 +315,6 @@
             showModal("📦 เพิ่มรายการสินค้าใหม่", html);
         }
 
-        // 🔥 แก้ไขบั๊กปุ่มกดบันทึก: ปรับปรุงไอดีปุ่มจาก saveProjectBtn (ผิด) เป็น saveProductBtn (ถูกต้อง 100%)
         function submitNewProduct() {
             const barcode = document.getElementById('newPBarcode').value.trim(), 
                   name = document.getElementById('newPName').value.trim(), 
@@ -401,6 +410,7 @@
             else { box.classList.add('hidden'); arrow.style.transform = 'rotate(0deg)'; }
         }
 
+        // 🔥 ปรับปรุงระบบสต๊อก: ให้ดึงข้อมูลชุดใหญ่ล่าสุดเสมอเมื่อกดเปิดหน้าต่างสต๊อก
         function openStockModal() {
             let stockHtml = '<div class="space-y-2.5 max-h-[72vh] overflow-y-auto pr-1">';
             if(catalogProducts && catalogProducts.length > 0) {
@@ -421,9 +431,9 @@
                         </div>
                     `;
                 });
-                stockHtml += '</div>'; showModal("📦 รายการสินค้าคงเหลือในคลัง", stockHtml);
+                stockHtml += '</div>'; showModal("🟢 รายการสินค้าคงเหลือในคลัง", stockHtml);
             } else {
-                showModal("📦 รายการสินค้าคงเหลือในคลัง", `<p class="text-center py-6" style="color:var(--ink-soft);">คลังข้อมูลว่างเปล่า กรุณากดปุ่ม "อัปเดตสต๊อก" ขวาสดด้านบน</p>`);
+                showModal("🟢 รายการสินค้าคงเหลือในคลัง", `<p class="text-center py-6" style="color:var(--ink-soft);">คลังข้อมูลว่างเปล่า กรุณากดปุ่ม "อัปเดตสต๊อก" ขวาสุดด้านบน</p>`);
             }
         }
 
@@ -459,7 +469,11 @@
             return `https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=150&q=80&sig=${encodeURIComponent(key)}`;
         }
 
-        function openProductPickerModal() { catalogFiltered = catalogProducts; renderCatalogModal(); }
+        function openProductPickerModal() { 
+            // 🟢 ทุกครั้งที่เปิดหน้าต่างเลือกซื้อสินค้า บังคับดึงข้อมูลล่าสุดพ่วงมาเรนเดอร์เสมอ
+            catalogFiltered = catalogProducts; 
+            renderCatalogModal(); 
+        }
         
         function renderCatalogModal() {
             const wrap = `
