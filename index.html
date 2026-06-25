@@ -51,12 +51,11 @@
                 </div>
                 <button onclick="preloadProductsData(true)" class="key-btn text-[9px] font-bold px-2.5 py-1 rounded-lg border text-emerald-400 border-emerald-500/30 bg-emerald-500/10">🔄 อัปเดตสต๊อก</button>
             </div>
-            <div class="grid grid-cols-5 gap-1.5 text-[9px] font-bold leading-tight">
-                <button onclick="openProductPickerModal()" class="key-btn text-white flex flex-col items-center justify-center gap-0.5 py-2 rounded-xl border border-white/10" style="background:var(--blue);"><span class="text-sm">🛍️</span>เลือกสินค้า</button>
-                <button onclick="openAddProductModal()" class="key-btn text-white flex flex-col items-center justify-center gap-0.5 py-2 rounded-xl border border-white/10" style="background:var(--till);"><span class="text-sm">📦</span>คลัง</button>
-                <button onclick="openStockModal()" class="key-btn text-white flex flex-col items-center justify-center gap-0.5 py-2 rounded-xl border border-white/10" style="background:var(--amber);"><span class="text-sm">🟢</span>สต๊อก</button>
-                <button onclick="openUnpaidModal()" class="key-btn flex flex-col items-center justify-center gap-0.5 py-2 rounded-xl border" style="background-color:rgba(189,58,46,0.16); color:#FF8A7A; border-color:rgba(189,58,46,0.3);"><span class="text-sm">🚨</span>ค้างจ่าย</button>
-                <button onclick="openHistoryModal()" class="key-btn flex flex-col items-center justify-center gap-0.5 py-2 rounded-xl border" style="background-color:rgba(255,255,255,0.08); color:#D9D4C2; border-color:rgba(255,255,255,0.14);"><span class="text-sm">📊</span>บัญชี</button>
+            <div class="grid grid-cols-4 gap-1.5 text-[10px] font-bold leading-tight">
+                <button onclick="openProductPickerModal()" class="key-btn text-white flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl border border-white/10" style="background:var(--blue);"><span class="text-sm">🛍️</span>เลือกสินค้า</button>
+                <button onclick="openStockModal()" class="key-btn text-white flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl border border-white/10" style="background:var(--amber);"><span class="text-sm">🟢</span>สต๊อกสินค้า</button>
+                <button onclick="openUnpaidModal()" class="key-btn flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl border" style="background-color:rgba(189,58,46,0.16); color:#FF8A7A; border-color:rgba(189,58,46,0.3);"><span class="text-sm">🚨</span>ค้างจ่าย</button>
+                <button onclick="openHistoryModal()" class="key-btn flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl border" style="background-color:rgba(255,255,255,0.08); color:#D9D4C2; border-color:rgba(255,255,255,0.14);"><span class="text-sm">📊</span>บัญชีรายงาน</button>
             </div>
         </div>
     </div>
@@ -153,8 +152,7 @@
 
         let cart = []; let html5Qrcode = null; let isCameraOpen = false; let audioCtx = null; let isProcessing = false;
         let catalogProducts = []; let catalogFiltered = [];
-        let historyCache = null; let cacheTimestamp = 0;
-        const CACHE_DURATION = 0; // 🔥 ยกเลิกการจำแคชประวัติเพื่อให้อัปเดตสดเสมอ
+        let historyCache = null;
 
         function unlockAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
         function playBeepSound() { 
@@ -176,11 +174,9 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            // 🔥 ยกเลิกการอ่านค่าตัวจำเก่าออกทั้งหมดเพื่อบังคับดึงค่าสดจากแผ่นงาน
             preloadProductsData(false);
         });
 
-        // 🔥 ปรับแก้ฟังก์ชันดึงสต๊อก: ใส่ตัวเลขสุ่มเวลาเพื่อสลัด Cache ข้อมูลจำเก่าของ Google เซิร์ฟเวอร์ทิ้งไป 100%
         function preloadProductsData(forceNotify = false) {
             if (forceNotify) showSuccessToast("⏳ กำลังโหลดสินค้าล่าสุดจาก Google Sheets...");
             return fetch(`${WEB_APP_URL}?action=getProductsData&_cb=${Date.now()}`)
@@ -192,11 +188,9 @@
                     
                     if (forceNotify) showSuccessToast("🟢 อัปเดตข้อมูลคลังสินค้าสำเร็จแล้ว");
                     
-                    // บังคับวาดหน้าจอใหม่ทันที
                     if (document.getElementById('catalogList')) {
                         renderCatalogList();
                     }
-                    // ถ้าร้านเปิดหน้าต่างสต๊อกค้างไว้ ให้ดึงภาพและสต๊อกชิ้นใหม่มาสลับทันที
                     const modalTitleEl = document.getElementById('modalTitle');
                     if (modalTitleEl && modalTitleEl.innerText.includes("สต๊อก") && !document.getElementById('reportModal').classList.contains('hidden')) {
                         openStockModal(); 
@@ -294,7 +288,6 @@
         }
         function clearCart() { cart = []; updateCartUI(); }
         
-        // 🔥 ดึงยอดข้อมูลงวดใหม่ทันทีเมื่อกดยืนยันออเดอร์
         function submitOrder() { 
             if(!cart.length) return; 
             const cust = document.getElementById('customerName').value.trim(); 
@@ -305,74 +298,13 @@
             document.getElementById('checkoutBtn').innerText = "⏳ ระบบกำลังตัดสต๊อกใน Sheets..."; 
             
             fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ payment: pay, customer: cust, items: cart }) })
-            .then(() => { 
-                showSuccessToast("🎉 บันทึกออเดอร์และตัดสต๊อกแล้ว!"); 
-                clearCart(); 
-                invalidateHistoryCache(); 
-                document.getElementById('customerName').value = "ทั่วไป"; 
-                // หน่วงเวลา 1.2 วินาทีเพื่อให้ฝั่งหลังบ้านอัปเดตสต๊อกเสร็จ แล้วดึงค่าใหม่ทันที
-                setTimeout(() => { preloadProductsData(false); }, 1200); 
-            }).finally(() => { 
-                document.getElementById('checkoutBtn').innerText = "🚀 ยืนยันปิดบิลและส่งข้อมูล"; 
-                updateCartUI(); 
-            }); 
-        }
-
-        function openAddProductModal() {
-            let html = `<div class="space-y-4 p-1">
-                <p class="text-xs font-bold uppercase tracking-wide" style="color:var(--ink-soft);">📦 แบบฟอร์มเพิ่มสินค้าใหม่เข้าฐานข้อมูล</p>
-                <div class="space-y-3">
-                    <div><label class="block text-[11px] font-bold mb-1" style="color:var(--ink-soft);">เลขบาร์โค้ด / รหัสสินค้า</label><input type="text" id="newPBarcode" class="w-full p-3.5 rounded-xl font-receipt font-bold text-sm" style="background:var(--paper); border:1px solid var(--line); color:var(--ink);" placeholder="พิมพ์รหัสสินค้า"></div>
-                    <div><label class="block text-[11px] font-bold mb-1" style="color:var(--ink-soft);">ชื่อรายการสินค้า</label><input type="text" id="newPName" class="w-full p-3.5 rounded-xl text-sm font-bold" style="background:var(--paper); border:1px solid var(--line); color:var(--ink);" placeholder="เช่น นมจืดตราหมี 200ml"></div>
-                    <div><label class="block text-[11px] font-bold mb-1" style="color:var(--ink-soft);">ราคาตั้งขายต่อชิ้น (บาท)</label><input type="number" id="newPPrice" class="w-full p-3.5 rounded-xl font-receipt font-bold text-sm" style="background:var(--paper); border:1px solid var(--line); color:var(--till-deep);" placeholder="0.00"></div>
-                    <div><label class="block text-[11px] font-bold mb-1" style="color:var(--ink-soft);">ลิงก์รูปภาพสินค้า (เช่น ลิงก์แชร์จาก Google Drive)</label><input type="text" id="newPImage" class="w-full p-3.5 rounded-xl text-sm font-medium" style="background:var(--paper); border:1px solid var(--line); color:var(--ink);" placeholder="วางลิงก์รูปภาพตรงนี้ (ถ้ามี)"></div>
-                </div>
-                <button onclick="submitNewProduct()" id="saveProductBtn" class="key-btn w-full text-white font-bold py-3.5 rounded-xl shadow-sm text-sm" style="background:var(--till);">💾 บันทึกสินค้าลงคลังแผ่นงาน</button>
-            </div>`;
-            showModal("📦 เพิ่มรายการสินค้าใหม่", html);
-        }
-
-        function submitNewProduct() {
-            const barcode = document.getElementById('newPBarcode').value.trim(), 
-                  name = document.getElementById('newPName').value.trim(), 
-                  price = document.getElementById('newPPrice').value.trim(),
-                  image = document.getElementById('newPImage').value.trim();
-                  
-            if(!barcode || !name || !price || isNaN(price)) { alert("🚨 กรุณากรอกข้อมูลสินค้าให้ครบถ้วน!"); return; }
-            
-            document.getElementById('saveProductBtn').disabled = true; 
-            document.getElementById('saveProductBtn').innerText = "⏳ กำลังส่งข้อมูล..."; 
-            showSuccessToast("⏳ กำลังเพิ่มสินค้าเข้าคลัง...");
-            
-            const productData = new URLSearchParams(); 
-            productData.append('action', 'addNewProduct'); 
-            productData.append('barcode', barcode); 
-            productData.append('name', name); 
-            productData.append('price', price);
-            productData.append('image', image);
-            
-            fetch(WEB_APP_URL, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, 
-                body: productData.toString(), 
-                mode: 'no-cors' 
-            }).then(() => { 
-                showSuccessToast("🎉 เพิ่มสินค้าลงคลังเรียบร้อย!"); 
-                closeModal(); 
-                setTimeout(() => { preloadProductsData(true); }, 1200); 
-            }).finally(() => { 
-                const saveBtn = document.getElementById('saveProductBtn');
-                if(saveBtn) {
-                    saveBtn.disabled = false; 
-                    saveBtn.innerText = "💾 บันทึกสินค้าลงคลังแผ่นงาน"; 
-                }
-            });
+            .then(() => { showSuccessToast("🎉 บันทึกออเดอร์และตัดสต๊อกแล้ว!"); clearCart(); document.getElementById('customerName').value = "ทั่วไป"; setTimeout(() => { preloadProductsData(false); }, 1200); })
+            .finally(() => { document.getElementById('checkoutBtn').innerText = "🚀 ยืนยันปิดบิลและส่งข้อมูล"; updateCartUI(); }); 
         }
 
         function getHistoryData() {
             return fetch(`${WEB_APP_URL}?action=getHistory&_cb=${Date.now()}`).then(r => r.json());
         }
-        function invalidateHistoryCache() { historyCache = null; }
 
         function openHistoryModal() {
             showModal("📊 รายงานสรุปยอดขายรายวัน", `<p class="text-center py-4 font-medium animate-pulse" style="color:var(--ink-soft);">⏳ กำลังเชื่อมต่อแผ่นงานหลังบ้าน...</p>`);
@@ -447,44 +379,23 @@
                 });
                 stockHtml += '</div>'; showModal("🟢 รายการสินค้าคงเหลือในคลัง", stockHtml);
             } else {
-                showModal("🟢 รายการสินค้าคงเหลือในคลัง", `<p class="text-center py-6" style="color:var(--ink-soft);">คลังข้อมูลว่างเปล่า กรุณากดปุ่ม "อัปเดตสต๊อก" ขวาสุดด้านบน</p>`);
+                showModal("🟢 รายการสินค้าคงเหลือในคลัง", `<p class="text-center py-6" style="color:var(--ink-soft);">คลังข้อมูลว่างเปล่า กรุณากดปุ่ม "อัปเดตสต๊อก" ขวาสดด้านบน</p>`);
             }
         }
 
         function resolveProductImageUrl(p) {
             let rawUrl = p.Image || p.image || ""; 
-            if (typeof rawUrl === "string") {
-                rawUrl = rawUrl.trim();
-            } else {
-                return "";
-            }
+            if (typeof rawUrl === "string") { rawUrl = rawUrl.trim(); } else { return ""; }
             if (rawUrl.includes("drive.google.com")) {
                 let fileId = "";
-                if (rawUrl.includes("/d/")) {
-                    fileId = rawUrl.split('/d/')[1].split('/')[0];
-                } else if (rawUrl.includes("id=")) {
-                    fileId = rawUrl.split('id=')[1].split('&')[0];
-                }
-                if (fileId) {
-                    return "https://drive.google.com/thumbnail?authuser=0&sz=w320&id=" + fileId;
-                }
+                if (rawUrl.includes("/d/")) { fileId = rawUrl.split('/d/')[1].split('/')[0]; } 
+                else if (rawUrl.includes("id=")) { fileId = rawUrl.split('id=')[1].split('&')[0]; }
+                if (fileId) return "https://drive.google.com/thumbnail?authuser=0&sz=w320&id=" + fileId;
             }
             return rawUrl;
         }
 
-        function generateAutoFallbackImage(productName) {
-            const clean = String(productName).toLowerCase();
-            let key = "box"; 
-            if (clean.includes("นม") || clean.includes("milk")) key = "milk-carton";
-            else if (clean.includes("น้ำ") || clean.includes("water")) key = "water-bottle";
-            else if (clean.includes("ชา") || clean.includes("tea") || clean.includes("โออิชิ")) key = "iced-tea";
-            else if (clean.includes("ขนม") || clean.includes("เลย์") || clean.includes("snack")) key = "chips";
-            else if (clean.includes("กาแฟ") || clean.includes("coffee")) key = "coffee-can";
-            return `https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=150&q=80&sig=${encodeURIComponent(key)}`;
-        }
-
         function openProductPickerModal() { 
-            // ดึงข้อมูลสดใหม่ทุกครั้งก่อนเปิดโหมดเลือกสินค้า
             preloadProductsData(false).then(() => {
                 catalogFiltered = catalogProducts; 
                 renderCatalogModal(); 
@@ -495,7 +406,7 @@
             const wrap = `
                 <div class="space-y-3">
                     <input type="text" id="catalogSearch" oninput="filterCatalog(this.value)" placeholder="🔎 ค้นหาชื่อสินค้าหรือบาร์โค้ด..." class="w-full p-3 rounded-xl text-sm font-bold" style="background:var(--paper); border:1px solid var(--line); color:var(--ink);">
-                    <p class="text-[10px] font-medium" style="color:var(--ink-soft);">แตะเลือกการ์ดสินค้าเพื่อเพิ่มยอดลงในบิลขายหน้าร้านได้ทันที</p>
+                    <p class="text-[10px] font-medium" style="color:var(--ink-soft);">แตะรายการสินค้าด้านล่างนี้ ระบบจะเพิ่มเข้าตะกร้าบิลและปิดหน้าต่างนี้ให้ทันที</p>
                     <div id="catalogList" class="grid grid-cols-2 gap-2.5 max-h-[58vh] overflow-y-auto pr-1 no-scrollbar"></div>
                 </div>
             `;
@@ -548,12 +459,17 @@
             renderCatalogList();
         }
 
+        // 🔥 แก้ไขระบบเลือกรายการสินค้า: เมื่อกดเลือกสินค้าแล้วระบบจะเพิ่มยอดเข้าบิล และสั่ง closeModal() หน้าต่างป๊อปอัปจะหายไปทันทีตามสั่ง
         function selectProductFromCatalog(barcode, name, price, stock) {
             playBeepSound(); if (navigator.vibrate) navigator.vibrate(35);
             const exist = cart.find(item => item.barcode === barcode);
             if(exist && exist.quantity >= stock) { showSuccessToast("🚨 สินค้าในคลังสต๊อกมีไม่พอขาย", true); return; }
             if(exist) { exist.quantity += 1; } else { cart.push({ barcode: barcode, name: name, price: parseFloat(price), quantity: 1 }); }
-            updateCartUI(); showSuccessToast(`เพิ่ม "${name}" เข้าบิล`);
+            updateCartUI(); 
+            showSuccessToast(`เพิ่ม "${name}" เข้าบิล`);
+            
+            // 🎯 คำสั่งปิดหน้าต่างเลือกสินค้าทันทีเมื่อเลือกเสร็จแล้ว
+            closeModal(); 
         }
 
         function openUnpaidModal() {
@@ -589,7 +505,6 @@
             const targetBox = document.getElementById(`debt-box-${boxIndex}`);
             if (targetBox) { targetBox.style.opacity = '0'; targetBox.style.transform = 'scale(0.95)'; setTimeout(() => { targetBox.remove(); if(document.querySelectorAll('[id^="debt-box-"]').length === 0) { document.getElementById('modalContent').innerHTML = `<p class="text-center py-6" style="color:var(--ink-soft);">🎉 ไม่พบยอดค้างชำระเงิน</p>`; } }, 300); }
             showSuccessToast(`💸 เคลียร์หนี้ คุณ ${customerName} สำเร็จ!`);
-            invalidateHistoryCache();
             const formDetails = new URLSearchParams(); formDetails.append('action', 'clearCustomerDebt'); formDetails.append('customerName', customerName);
             fetch(WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formDetails.toString(), mode: 'no-cors' }).then(() => { setTimeout(() => { preloadProductsData(false); }, 1500); });
         }
