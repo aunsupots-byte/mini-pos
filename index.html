@@ -307,9 +307,9 @@
         function submitNewProduct() {
             const barcode = document.getElementById('newPBarcode').value.trim(), name = document.getElementById('newPName').value.trim(), price = document.getElementById('newPPrice').value.trim();
             if(!barcode || !name || !price || isNaN(price)) { alert("🚨 กรุณากรอกข้อมูลสินค้าให้ครบถ้วน!"); return; }
-            document.getElementById('saveProductBtn').disabled = true; document.getElementById('saveProductBtn').innerText = "⏳ กำลังส่งข้อมูล..."; showSuccessToast("⏳ กำลังเพิ่มสินค้าเข้าคลัง...");
+            document.getElementById('saveProjectBtn').disabled = true; document.getElementById('saveProductBtn').innerText = "⏳ กำลังส่งข้อมูล..."; showSuccessToast("⏳ กำลังเพิ่มสินค้าเข้าคลัง...");
             const productData = new URLSearchParams(); productData.append('action', 'addNewProduct'); productData.append('barcode', barcode); productData.append('name', name); productData.append('price', price);
-            fetch(WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: productData.toString(), mode: 'no-cors' }).then(() => { showSuccessToast("🎉 เพิ่มสินค้าลงคลังเรียบร้อย!"); closeModal(); preloadProductsData(false); }).finally(() => { document.getElementById('saveProductBtn').disabled = false; document.getElementById('saveProductBtn').innerText = "💾 บันทึกสินค้าลงคลังแผ่นงาน"; });
+            fetch(WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-x-www-form-urlencoded' }, body: productData.toString(), mode: 'no-cors' }).then(() => { showSuccessToast("🎉 เพิ่มสินค้าลงคลังเรียบร้อย!"); closeModal(); preloadProductsData(false); }).finally(() => { document.getElementById('saveProductBtn').disabled = false; document.getElementById('saveProductBtn').innerText = "💾 บันทึกสินค้าลงคลังแผ่นงาน"; });
         }
 
         function getHistoryData() {
@@ -396,7 +396,7 @@
             }
         }
 
-        // 🔥 แก้ไขระบบดึงรูปภาพ: เพิ่มการเช็กคีย์ p.Image (พิมพ์ใหญ่) และแปลงลิงก์ Google Drive
+        // 🔥 แก้ไขระบบดึงและสตรีมรูปภาพ (Google Drive Direct Stream) จบปัญหารูปภาพแตก/ไม่แสดงผลอย่างถาวร
         function resolveProductImageUrl(p) {
             let rawUrl = p.Image || p.image || ""; 
             if (typeof rawUrl === "string") {
@@ -405,10 +405,15 @@
                 return "";
             }
             if (rawUrl.includes("drive.google.com")) {
-                let parts = rawUrl.split('/d/');
-                if (parts.length > 1) {
-                    let fileId = parts[1].split('/')[0];
-                    return "https://drive.google.com/uc?export=view&id=" + fileId;
+                // รองรับลิงก์ของ Google Drive ทุกรูปแบบ
+                let fileId = "";
+                if (rawUrl.includes("/d/")) {
+                    fileId = rawUrl.split('/d/')[1].split('/')[0];
+                } else if (rawUrl.includes("id=")) {
+                    fileId = rawUrl.split('id=')[1].split('&')[0];
+                }
+                if (fileId) {
+                    return "https://drive.google.com/thumbnail?authuser=0&sz=w320&id=" + fileId;
                 }
             }
             return rawUrl;
@@ -441,7 +446,6 @@
             renderCatalogList();
         }
 
-        // 🔥 ซ่อมแซมบั๊กใหญ่: แก้ไขจาก p.Name (พังค้าง) มาเป็น p.name (ถูกต้อง) เมนูกดเปิดได้ทันทีชัวร์ 100%
         function renderCatalogList() {
             const listEl = document.getElementById('catalogList'); if (!listEl) return;
             if (!catalogFiltered.length) { listEl.innerHTML = `<p class="col-span-2 text-center py-6 text-xs" style="color:var(--ink-soft);">ไม่พบสินค้าในฐานความจำ</p>`; return; }
@@ -449,10 +453,7 @@
             catalogFiltered.forEach((p) => {
                 const isOut = p.stock <= 0;
                 const finalImgUrl = resolveProductImageUrl(p);
-                
-                // 🛠️ ซ่อมแซมคำสั่งจุดนี้เรียบร้อยแล้ว (เปลี่ยนจาก p.Name เป็น p.name)
                 const safeName = p.name ? p.name.replace(/'/g, "\\'") : "";
-                const fallbackImg = generateAutoFallbackImage(p.name || "");
                 
                 html += `
                     <div onclick="${isOut ? '' : `selectProductFromCatalog('${p.barcode}', '${safeName}', ${p.price}, ${p.stock})`}" 
