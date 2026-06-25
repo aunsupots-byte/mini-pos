@@ -152,7 +152,6 @@
 
         let cart = []; let html5Qrcode = null; let isCameraOpen = false; let audioCtx = null; let isProcessing = false;
         let catalogProducts = []; let catalogFiltered = [];
-        let historyCache = null;
 
         function unlockAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
         function playBeepSound() { 
@@ -416,6 +415,7 @@
             renderCatalogList();
         }
 
+        // 🔥 แก้ไขระบบโครงสร้างตัวสลับแท็กรูปภาพเสร็จสมบูรณ์ 100% ไร้คำสั่งตีกันเอง
         function renderCatalogList() {
             const listEl = document.getElementById('catalogList'); if (!listEl) return;
             if (!catalogFiltered.length) { listEl.innerHTML = `<p class="col-span-2 text-center py-6 text-xs" style="color:var(--ink-soft);">ไม่พบสินค้าในฐานความจำ</p>`; return; }
@@ -425,18 +425,32 @@
                 const finalImgUrl = resolveProductImageUrl(p);
                 const safeName = p.name ? p.name.replace(/'/g, "\\'") : "";
                 
+                // แยกบล็อกการเช็ก: ถ้าลิงก์รูปภาพในคอลัมน์ E มีข้อมูลจะถูกจัดอยู่ในส่วนนี้
+                let imgBlockHTML = "";
+                if (finalImgUrl !== "") {
+                    // หากรูปภาพโหลดสำเร็จ บล็อกชื่อจำลอง (Fallback) สีเทาด้านล่างจะถูกสั่งซ่อนอัตโนมัติด้วยคำสั่งสคริปต์สลับชั้น
+                    imgBlockHTML = `
+                        <img src="${finalImgUrl}" alt="${p.name}" class="w-full h-full object-cover" 
+                             onerror="this.style.display='none'; document.getElementById('fallback-${p.barcode}').style.display='flex';">
+                        <div id="fallback-${p.barcode}" class="hidden w-full h-full items-center justify-center font-bold text-xs text-slate-500 bg-slate-200 rounded-lg p-1 uppercase">
+                            ${p.name}
+                        </div>
+                    `;
+                } else {
+                    // หากช่องลิงก์ว่างเปล่า ระบบจะดึงชื่อตัวหนังสือขึ้นมาโชว์ตรงๆ ทันที
+                    imgBlockHTML = `
+                        <div class="flex w-full h-full items-center justify-center font-bold text-xs text-slate-500 bg-slate-200 rounded-lg p-1 uppercase">
+                            ${p.name}
+                        </div>
+                    `;
+                }
+                
                 html += `
                     <div onclick="${isOut ? '' : `selectProductFromCatalog('${p.barcode}', '${safeName}', ${p.price}, ${p.stock})`}" 
                          class="key-btn p-2.5 rounded-2xl shadow-sm flex flex-col justify-between border cursor-pointer active:opacity-70 bg-white" 
                          style="border-color:${isOut ? 'rgba(189,58,46,0.25)' : 'var(--line)'}; opacity:${isOut ? '0.5' : '1'};">
                         <div class="w-full h-24 rounded-xl overflow-hidden mb-2 bg-slate-100 relative border border-slate-100 flex items-center justify-center text-center p-2">
-                            ${finalImgUrl !== "" ? 
-                                `<img src="${finalImgUrl}" alt="${p.name}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` 
-                                : ''
-                            }
-                            <div class="${finalImgUrl !== "" ? 'hidden' : 'flex'} w-full h-full items-center justify-center font-bold text-xs text-slate-500 bg-slate-200 rounded-lg p-1 uppercase">
-                                ${p.name}
-                            </div>
+                            ${imgBlockHTML}
                             <div class="absolute top-1 right-1 text-[8px] bg-black/60 text-white px-1.5 py-0.5 rounded font-receipt">คลัง: ${p.stock}</div>
                         </div>
                         <div class="space-y-0.5 min-w-0">
@@ -459,7 +473,6 @@
             renderCatalogList();
         }
 
-        // 🔥 แก้ไขระบบเลือกรายการสินค้า: เมื่อกดเลือกสินค้าแล้วระบบจะเพิ่มยอดเข้าบิล และสั่ง closeModal() หน้าต่างป๊อปอัปจะหายไปทันทีตามสั่ง
         function selectProductFromCatalog(barcode, name, price, stock) {
             playBeepSound(); if (navigator.vibrate) navigator.vibrate(35);
             const exist = cart.find(item => item.barcode === barcode);
@@ -467,8 +480,6 @@
             if(exist) { exist.quantity += 1; } else { cart.push({ barcode: barcode, name: name, price: parseFloat(price), quantity: 1 }); }
             updateCartUI(); 
             showSuccessToast(`เพิ่ม "${name}" เข้าบิล`);
-            
-            // 🎯 คำสั่งปิดหน้าต่างเลือกสินค้าทันทีเมื่อเลือกเสร็จแล้ว
             closeModal(); 
         }
 
