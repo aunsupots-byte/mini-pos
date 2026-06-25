@@ -298,18 +298,49 @@
                     <div><label class="block text-[11px] font-bold mb-1" style="color:var(--ink-soft);">เลขบาร์โค้ด / รหัสสินค้า</label><input type="text" id="newPBarcode" class="w-full p-3.5 rounded-xl font-receipt font-bold text-sm" style="background:var(--paper); border:1px solid var(--line); color:var(--ink);" placeholder="พิมพ์รหัสสินค้า"></div>
                     <div><label class="block text-[11px] font-bold mb-1" style="color:var(--ink-soft);">ชื่อรายการสินค้า</label><input type="text" id="newPName" class="w-full p-3.5 rounded-xl text-sm font-bold" style="background:var(--paper); border:1px solid var(--line); color:var(--ink);" placeholder="เช่น นมจืดตราหมี 200ml"></div>
                     <div><label class="block text-[11px] font-bold mb-1" style="color:var(--ink-soft);">ราคาตั้งขายต่อชิ้น (บาท)</label><input type="number" id="newPPrice" class="w-full p-3.5 rounded-xl font-receipt font-bold text-sm" style="background:var(--paper); border:1px solid var(--line); color:var(--till-deep);" placeholder="0.00"></div>
+                    <div><label class="block text-[11px] font-bold mb-1" style="color:var(--ink-soft);">ลิงก์รูปภาพสินค้า (เช่น ลิงก์แชร์จาก Google Drive)</label><input type="text" id="newPImage" class="w-full p-3.5 rounded-xl text-sm font-medium" style="background:var(--paper); border:1px solid var(--line); color:var(--ink);" placeholder="วางลิงก์รูปภาพตรงนี้ (ถ้ามี)"></div>
                 </div>
                 <button onclick="submitNewProduct()" id="saveProductBtn" class="key-btn w-full text-white font-bold py-3.5 rounded-xl shadow-sm text-sm" style="background:var(--till);">💾 บันทึกสินค้าลงคลังแผ่นงาน</button>
             </div>`;
             showModal("📦 เพิ่มรายการสินค้าใหม่", html);
         }
 
+        // 🔥 แก้ไขบั๊กปุ่มกดบันทึก: ปรับปรุงไอดีปุ่มจาก saveProjectBtn (ผิด) เป็น saveProductBtn (ถูกต้อง 100%)
         function submitNewProduct() {
-            const barcode = document.getElementById('newPBarcode').value.trim(), name = document.getElementById('newPName').value.trim(), price = document.getElementById('newPPrice').value.trim();
+            const barcode = document.getElementById('newPBarcode').value.trim(), 
+                  name = document.getElementById('newPName').value.trim(), 
+                  price = document.getElementById('newPPrice').value.trim(),
+                  image = document.getElementById('newPImage').value.trim();
+                  
             if(!barcode || !name || !price || isNaN(price)) { alert("🚨 กรุณากรอกข้อมูลสินค้าให้ครบถ้วน!"); return; }
-            document.getElementById('saveProjectBtn').disabled = true; document.getElementById('saveProductBtn').innerText = "⏳ กำลังส่งข้อมูล..."; showSuccessToast("⏳ กำลังเพิ่มสินค้าเข้าคลัง...");
-            const productData = new URLSearchParams(); productData.append('action', 'addNewProduct'); productData.append('barcode', barcode); productData.append('name', name); productData.append('price', price);
-            fetch(WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-x-www-form-urlencoded' }, body: productData.toString(), mode: 'no-cors' }).then(() => { showSuccessToast("🎉 เพิ่มสินค้าลงคลังเรียบร้อย!"); closeModal(); preloadProductsData(false); }).finally(() => { document.getElementById('saveProductBtn').disabled = false; document.getElementById('saveProductBtn').innerText = "💾 บันทึกสินค้าลงคลังแผ่นงาน"; });
+            
+            document.getElementById('saveProductBtn').disabled = true; 
+            document.getElementById('saveProductBtn').innerText = "⏳ กำลังส่งข้อมูล..."; 
+            showSuccessToast("⏳ กำลังเพิ่มสินค้าเข้าคลัง...");
+            
+            const productData = new URLSearchParams(); 
+            productData.append('action', 'addNewProduct'); 
+            productData.append('barcode', barcode); 
+            productData.append('name', name); 
+            productData.append('price', price);
+            productData.append('image', image);
+            
+            fetch(WEB_APP_URL, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, 
+                body: productData.toString(), 
+                mode: 'no-cors' 
+            }).then(() => { 
+                showSuccessToast("🎉 เพิ่มสินค้าลงคลังเรียบร้อย!"); 
+                closeModal(); 
+                preloadProductsData(true); 
+            }).finally(() => { 
+                const saveBtn = document.getElementById('saveProductBtn');
+                if(saveBtn) {
+                    saveBtn.disabled = false; 
+                    saveBtn.innerText = "💾 บันทึกสินค้าลงคลังแผ่นงาน"; 
+                }
+            });
         }
 
         function getHistoryData() {
@@ -396,7 +427,6 @@
             }
         }
 
-        // 🔥 แก้ไขระบบดึงและสตรีมรูปภาพ (Google Drive Direct Stream) จบปัญหารูปภาพแตก/ไม่แสดงผลอย่างถาวร
         function resolveProductImageUrl(p) {
             let rawUrl = p.Image || p.image || ""; 
             if (typeof rawUrl === "string") {
@@ -405,7 +435,6 @@
                 return "";
             }
             if (rawUrl.includes("drive.google.com")) {
-                // รองรับลิงก์ของ Google Drive ทุกรูปแบบ
                 let fileId = "";
                 if (rawUrl.includes("/d/")) {
                     fileId = rawUrl.split('/d/')[1].split('/')[0];
