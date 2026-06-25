@@ -415,69 +415,73 @@
         // ถ้าเป็นลิงก์แชร์จาก Google Drive (รูปแบบ .../file/d/FILE_ID/view) จะแปลงเป็นลิงก์โหลดรูปตรง (thumbnail) ให้อัตโนมัติ
         // เพราะลิงก์แชร์ปกติของ Drive ใช้กับ <img> ไม่ได้ และเป็นสาเหตุหลักที่รูปไม่ขึ้น
         // ถ้าคอลัมน์ Image ว่าง หรือรูปโหลดไม่ขึ้นจริง ๆ จะแสดง "ชื่อสินค้า" เป็นตัวหนังสือแทนช่องรูปนั้นเลย
-        function resolveProductImageUrl(p) {
-            let raw = (p.Image != null ? p.Image : (p.image != null ? p.image : "")).toString().trim();
-            if (!raw) return null;
-            const driveMatch = raw.match(/drive\.google\.com\/(?:file\/d\/|open\?id=)([a-zA-Z0-9_-]+)/);
-            if (driveMatch && driveMatch[1]) { return `https://drive.google.com/thumbnail?id=${driveMatch[1]}&sz=w400`; }
-            if (!/^https?:\/\//i.test(raw)) return null;
-            return raw;
+// ฟังก์ชันวิเคราะห์และแปลงลิงก์รูปภาพ Google Drive เป็น Direct Link
+function resolveProductImageUrl(p) {
+    let rawUrl = p.Image || ""; // อ่านเฉพาะคีย์ Image พิมพ์ใหญ่ตามหัวคอลัมน์ E
+    if (typeof rawUrl === "string") {
+        rawUrl = rawUrl.trim();
+    } else {
+        return "";
+    }
+    // ถ้าเป็นลิงก์แชร์จาก Google Drive จะดึง FILE_ID มาทำลิงก์โหลดรูปตรงให้ทันที
+    if (rawUrl.includes("drive.google.com")) {
+        let parts = rawUrl.split('/d/');
+        if (parts.length > 1) {
+            let fileId = parts[1].split('/')[0];
+            return "https://drive.google.com/uc?export=view&id=" + fileId;
         }
+    }
+    return rawUrl; // ลิงก์เว็บทั่วไปส่งค่ากลับตรงๆ
+}
 
-        function escapeHtml(str) { return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
-        function buildProductImageSlotHtml(p) {
-            const imgUrl = resolveProductImageUrl(p);
-            const nameFallback = `<div class="no-image-fallback w-full h-full flex items-center justify-center text-center p-1.5" style="background:var(--blue-pale);"><span class="font-bold text-[11px] leading-tight" style="color:var(--blue);">${escapeHtml(p.name)}</span></div>`;
-            if (!imgUrl) return nameFallback;
-            return `<img src="${imgUrl}" alt="${escapeHtml(p.name)}" class="w-full h-full object-cover" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                    <div class="no-image-fallback hidden w-full h-full items-center justify-center text-center p-1.5" style="background:var(--blue-pale);"><span class="font-bold text-[11px] leading-tight" style="color:var(--blue);">${escapeHtml(p.name)}</span></div>`;
-        }
-
-        function openProductPickerModal() { catalogFiltered = catalogProducts; renderCatalogModal(); }
-        function renderCatalogModal() {
-            const wrap = `
-                <div class="space-y-3">
-                    <input type="text" id="catalogSearch" oninput="filterCatalog(this.value)" placeholder="🔎 ค้นหาชื่อสินค้าหรือบาร์โค้ด..." class="w-full p-3 rounded-xl text-sm font-bold" style="background:var(--paper); border:1px solid var(--line); color:var(--ink);">
-                    <p class="text-[10px] font-medium" style="color:var(--ink-soft);">แตะเลือกการ์ดสินค้าเพื่อเพิ่มยอดลงในบิลขายหน้าร้านได้ทันที</p>
-                    <div id="catalogList" class="grid grid-cols-2 gap-2.5 max-h-[58vh] overflow-y-auto pr-1 no-scrollbar"></div>
-                </div>
-            `;
-            document.getElementById('reportModal').classList.remove('hidden');
-            document.getElementById('modalTitle').innerText = "🛍️ เลือกสินค้าจากคลัง";
-            document.getElementById('modalContent').innerHTML = wrap;
-            renderCatalogList();
-        }
-
-        function renderCatalogList() {
-            const listEl = document.getElementById('catalogList'); if (!listEl) return;
-            if (!catalogFiltered.length) { listEl.innerHTML = `<p class="col-span-2 text-center py-6 text-xs" style="color:var(--ink-soft);">ไม่พบสินค้าในฐานความจำ</p>`; return; }
-            let html = "";
-            catalogFiltered.forEach((p) => {
-                const isOut = p.stock <= 0;
-                const safeName = String(p.name).replace(/'/g, "\\'");
-                html += `
-                    <div onclick="${isOut ? '' : `selectProductFromCatalog('${p.barcode}', '${safeName}', ${p.price}, ${p.stock})`}" 
-                         class="key-btn p-2.5 rounded-2xl shadow-sm flex flex-col justify-between border cursor-pointer active:opacity-70 bg-white" 
-                         style="border-color:${isOut ? 'rgba(189,58,46,0.25)' : 'var(--line)'}; opacity:${isOut ? '0.5' : '1'};">
-                        <div class="w-full h-24 rounded-xl overflow-hidden mb-2 bg-slate-50 relative border border-slate-100">
-                            ${buildProductImageSlotHtml(p)}
-                            <div class="absolute top-1 right-1 text-[8px] bg-black/60 text-white px-1.5 py-0.5 rounded font-receipt">คลัง: ${p.stock}</div>
-                        </div>
-                        <div class="space-y-0.5 min-w-0">
-                            <div class="font-bold text-[11px] truncate" style="color:var(--ink);">${p.name}</div>
-                            <div class="text-[9px] font-receipt truncate" style="color:var(--ink-soft);">${p.barcode}</div>
-                        </div>
-                        <div class="flex justify-between items-center mt-1.5 pt-1 border-t border-dashed" style="border-color:var(--line);">
-                            <span class="font-receipt font-bold text-xs" style="color:var(--blue);">${p.price.toFixed(2)} ฿</span>
-                            <span class="text-[9px] font-bold text-emerald-700">${isOut ? 'หมด' : 'เลือก ➕'}</span>
-                        </div>
-
+function renderCatalogList() {
+    const listEl = document.getElementById('catalogList');
+    if (!listEl) return;
+    if (!catalogFiltered.length) { 
+        listEl.innerHTML = `<p class="col-span-2 text-center py-6 text-xs" style="color:var(--ink-soft);">ไม่พบสินค้าในฐานความจำ</p>`; 
+        return; 
+    }
+    let html = "";
+    
+    catalogFiltered.forEach((p) => {
+        const isOut = p.stock <= 0;
+        
+        // 🟢 เรียกฟังก์ชันดึงและแปลงลิงก์รูปภาพ
+        const finalImgUrl = resolveProductImageUrl(p);
+        
+        html += `
+            <div onclick="${isOut ? '' : `selectProductFromCatalog('${p.barcode}', '${p.name.replace(/'/g, "\\'")}', ${p.price}, ${p.stock})`}" 
+                 class="key-btn p-2.5 rounded-2xl shadow-sm flex flex-col justify-between border cursor-pointer active:opacity-70 bg-white" 
+                 style="border-color:${isOut ? 'rgba(189,58,46,0.25)' : 'var(--line)'}; opacity:${isOut ? '0.5' : '1'};">
+                
+                <div class="w-full h-24 rounded-xl overflow-hidden mb-2 bg-slate-100 relative border flex items-center justify-center text-center p-2">
+                    
+                    ${finalImgUrl !== "" ? 
+                        `<img src="${finalImgUrl}" alt="${p.name}" class="w-full h-full object-cover" 
+                              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` 
+                        : ''
+                    }
+                    
+                    <div class="${finalImgUrl !== "" ? 'hidden' : 'flex'} w-full h-full items-center justify-center font-bold text-xs text-slate-500 bg-slate-200 rounded-lg p-1 uppercase">
+                        ${p.name}
                     </div>
-                `;
-            });
-            listEl.innerHTML = html;
-        }
+                    
+                    <div class="absolute top-1 right-1 text-[8px] bg-black/60 text-white px-1.5 py-0.5 rounded font-receipt">คลัง: ${p.stock}</div>
+                </div>
+                
+                <div class="space-y-0.5 min-w-0">
+                    <div class="font-bold text-[11px] truncate" style="color:var(--ink);">${p.name}</div>
+                    <div class="text-[9px] font-receipt truncate" style="color:var(--ink-soft);">${p.barcode}</div>
+                </div>
+                <div class="flex justify-between items-center mt-1.5 pt-1 border-t border-dashed" style="border-color:var(--line);">
+                    <span class="font-receipt font-bold text-xs" style="color:var(--blue);">${p.price.toFixed(2)} ฿</span>
+                    <span class="text-[9px] font-bold text-emerald-700">${isOut ? 'หมด' : 'เลือก ➕'}</span>
+                </div>
+            </div>
+        `;
+    });
+    listEl.innerHTML = html;
+}
 
         function filterCatalog(query) {
             const q = query.trim().toLowerCase();
