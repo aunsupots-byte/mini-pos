@@ -154,7 +154,7 @@
         let cart = []; let html5Qrcode = null; let isCameraOpen = false; let audioCtx = null; let isProcessing = false;
         let catalogProducts = []; let catalogFiltered = [];
         let historyCache = null; let cacheTimestamp = 0;
-        const CACHE_DURATION = 15000;
+        const CACHE_DURATION = 0; // 🔥 ยกเลิกการจำแคชประวัติเพื่อให้อัปเดตสดเสมอ
 
         function unlockAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
         function playBeepSound() { 
@@ -176,40 +176,34 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            const localCachedData = localStorage.getItem('pos_products_cache');
-            if (localCachedData) {
-                try {
-                    catalogProducts = JSON.parse(localCachedData);
-                    catalogFiltered = catalogProducts;
-                } catch(e) { localStorage.removeItem('pos_products_cache'); }
-            }
+            // 🔥 ยกเลิกการอ่านค่าตัวจำเก่าออกทั้งหมดเพื่อบังคับดึงค่าสดจากแผ่นงาน
             preloadProductsData(false);
         });
 
-        // 🔥 แก้ไขระบบดึงข้อมูล: สั่งบังคับเรนเดอร์หน้าจอใหม่ทันทีที่ข้อมูลล่าสุดส่งมาถึง เพื่อให้เมนู สต๊อก และ เลือกสินค้า อัปเดตตรงกับใน Sheets ตลอดเวลา
+        // 🔥 ปรับแก้ฟังก์ชันดึงสต๊อก: ใส่ตัวเลขสุ่มเวลาเพื่อสลัด Cache ข้อมูลจำเก่าของ Google เซิร์ฟเวอร์ทิ้งไป 100%
         function preloadProductsData(forceNotify = false) {
-            if (forceNotify) showSuccessToast("⏳ กำลังอัปเดตสต๊อกสินค้าล่าสุด...");
-            return fetch(`${WEB_APP_URL}?action=getProductsData&_t=${Date.now()}`)
+            if (forceNotify) showSuccessToast("⏳ กำลังโหลดสินค้าล่าสุดจาก Google Sheets...");
+            return fetch(`${WEB_APP_URL}?action=getProductsData&_cb=${Date.now()}`)
             .then(r => r.json())
             .then(products => {
                 if (products && Array.isArray(products)) {
                     catalogProducts = products;
                     catalogFiltered = products;
-                    localStorage.setItem('pos_products_cache', JSON.stringify(products));
+                    
                     if (forceNotify) showSuccessToast("🟢 อัปเดตข้อมูลคลังสินค้าสำเร็จแล้ว");
                     
-                    // 🟢 สั่งวาดข้อมูลหน้าจอปัจจุบันใหม่ทันทีเมื่อ Sheets มีการเปลี่ยนแปลง
+                    // บังคับวาดหน้าจอใหม่ทันที
                     if (document.getElementById('catalogList')) {
                         renderCatalogList();
                     }
-                    // ถ้าโมดอลเปิดดูสต๊อกค้างอยู่ ให้รีเฟรชข้อมูลสต๊อกในโมดอลด้วย
+                    // ถ้าร้านเปิดหน้าต่างสต๊อกค้างไว้ ให้ดึงภาพและสต๊อกชิ้นใหม่มาสลับทันที
                     const modalTitleEl = document.getElementById('modalTitle');
                     if (modalTitleEl && modalTitleEl.innerText.includes("สต๊อก") && !document.getElementById('reportModal').classList.contains('hidden')) {
                         openStockModal(); 
                     }
                 }
             }).catch(err => {
-                if (forceNotify) showSuccessToast("🟢 ดึงแคชสินค้าหน้าร้านเรียบร้อย");
+                console.log(err);
             });
         }
 
@@ -299,7 +293,30 @@
             btn.disabled = !cart.length; btn.style.backgroundColor = cart.length ? "var(--till)" : "var(--line)"; btn.style.color = cart.length ? "#FFFFFF" : "#A8A28C"; btn.style.cursor = cart.length ? "pointer" : "not-allowed";
         }
         function clearCart() { cart = []; updateCartUI(); }
-        function submitOrder() { if(!cart.length) return; const cust = document.getElementById('customerName').value.trim(); const pay = document.getElementById('payment').value; if(pay === "ยังไม่ได้ชำระเงิน" && cust === "ทั่วไป") { showSuccessToast("กรุณาระบุชื่อคนติดหนี้ค้างจ่าย!", true); return; } document.getElementById('checkoutBtn').disabled = true; document.getElementById('checkoutBtn').innerText = "⏳ ระบบกำลังส่งข้อมูลเข้า Sheets..."; fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ payment: pay, customer: cust, items: cart }) }).then(() => { showSuccessToast("🎉 บันทึกปิดบิลเข้าคลังสำเร็จ!"); clearCart(); invalidateHistoryCache(); document.getElementById('customerName').value = "ทั่วไป"; preloadProductsData(false); }).finally(() => { document.getElementById('checkoutBtn').innerText = "🚀 ยืนยันปิดบิลและส่งข้อมูล"; updateCartUI(); }); }
+        
+        // 🔥 ดึงยอดข้อมูลงวดใหม่ทันทีเมื่อกดยืนยันออเดอร์
+        function submitOrder() { 
+            if(!cart.length) return; 
+            const cust = document.getElementById('customerName').value.trim(); 
+            const pay = document.getElementById('payment').value; 
+            if(pay === "ยังไม่ได้ชำระเงิน" && cust === "ทั่วไป") { showSuccessToast("กรุณาระบุชื่อคนติดหนี้ค้างจ่าย!", true); return; } 
+            
+            document.getElementById('checkoutBtn').disabled = true; 
+            document.getElementById('checkoutBtn').innerText = "⏳ ระบบกำลังตัดสต๊อกใน Sheets..."; 
+            
+            fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ payment: pay, customer: cust, items: cart }) })
+            .then(() => { 
+                showSuccessToast("🎉 บันทึกออเดอร์และตัดสต๊อกแล้ว!"); 
+                clearCart(); 
+                invalidateHistoryCache(); 
+                document.getElementById('customerName').value = "ทั่วไป"; 
+                // หน่วงเวลา 1.2 วินาทีเพื่อให้ฝั่งหลังบ้านอัปเดตสต๊อกเสร็จ แล้วดึงค่าใหม่ทันที
+                setTimeout(() => { preloadProductsData(false); }, 1200); 
+            }).finally(() => { 
+                document.getElementById('checkoutBtn').innerText = "🚀 ยืนยันปิดบิลและส่งข้อมูล"; 
+                updateCartUI(); 
+            }); 
+        }
 
         function openAddProductModal() {
             let html = `<div class="space-y-4 p-1">
@@ -342,7 +359,7 @@
             }).then(() => { 
                 showSuccessToast("🎉 เพิ่มสินค้าลงคลังเรียบร้อย!"); 
                 closeModal(); 
-                preloadProductsData(true); 
+                setTimeout(() => { preloadProductsData(true); }, 1200); 
             }).finally(() => { 
                 const saveBtn = document.getElementById('saveProductBtn');
                 if(saveBtn) {
@@ -353,11 +370,9 @@
         }
 
         function getHistoryData() {
-            const now = Date.now();
-            if (historyCache && (now - cacheTimestamp < CACHE_DURATION)) { return Promise.resolve(historyCache); }
-            return fetch(`${WEB_APP_URL}?action=getHistory&_t=${now}`).then(r => r.json()).then(data => { historyCache = data; cacheTimestamp = Date.now(); return data; });
+            return fetch(`${WEB_APP_URL}?action=getHistory&_cb=${Date.now()}`).then(r => r.json());
         }
-        function invalidateHistoryCache() { historyCache = null; cacheTimestamp = 0; }
+        function invalidateHistoryCache() { historyCache = null; }
 
         function openHistoryModal() {
             showModal("📊 รายงานสรุปยอดขายรายวัน", `<p class="text-center py-4 font-medium animate-pulse" style="color:var(--ink-soft);">⏳ กำลังเชื่อมต่อแผ่นงานหลังบ้าน...</p>`);
@@ -410,7 +425,6 @@
             else { box.classList.add('hidden'); arrow.style.transform = 'rotate(0deg)'; }
         }
 
-        // 🔥 ปรับปรุงระบบสต๊อก: ให้ดึงข้อมูลชุดใหญ่ล่าสุดเสมอเมื่อกดเปิดหน้าต่างสต๊อก
         function openStockModal() {
             let stockHtml = '<div class="space-y-2.5 max-h-[72vh] overflow-y-auto pr-1">';
             if(catalogProducts && catalogProducts.length > 0) {
@@ -470,9 +484,11 @@
         }
 
         function openProductPickerModal() { 
-            // 🟢 ทุกครั้งที่เปิดหน้าต่างเลือกซื้อสินค้า บังคับดึงข้อมูลล่าสุดพ่วงมาเรนเดอร์เสมอ
-            catalogFiltered = catalogProducts; 
-            renderCatalogModal(); 
+            // ดึงข้อมูลสดใหม่ทุกครั้งก่อนเปิดโหมดเลือกสินค้า
+            preloadProductsData(false).then(() => {
+                catalogFiltered = catalogProducts; 
+                renderCatalogModal(); 
+            });
         }
         
         function renderCatalogModal() {
@@ -575,7 +591,7 @@
             showSuccessToast(`💸 เคลียร์หนี้ คุณ ${customerName} สำเร็จ!`);
             invalidateHistoryCache();
             const formDetails = new URLSearchParams(); formDetails.append('action', 'clearCustomerDebt'); formDetails.append('customerName', customerName);
-            fetch(WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formDetails.toString(), mode: 'no-cors' }).then(() => { setTimeout(() => { preloadProductsData(false); }, 1000); });
+            fetch(WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formDetails.toString(), mode: 'no-cors' }).then(() => { setTimeout(() => { preloadProductsData(false); }, 1500); });
         }
 
         function showModal(title, text) { document.getElementById('reportModal').classList.remove('hidden'); document.getElementById('modalTitle').innerText = title; document.getElementById('modalContent').innerHTML = text; }
